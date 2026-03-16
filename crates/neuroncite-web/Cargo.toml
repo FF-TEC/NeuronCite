@@ -1,0 +1,154 @@
+# neuroncite-web: Browser-based web frontend server for the NeuronCite application.
+# Serves embedded static assets (SolidJS SPA) via axum, provides Server-Sent Events
+# (SSE) for real-time progress/log streaming, and additional REST endpoints for
+# file browsing, model management, dependency probes, and MCP registration that
+# the browser-based frontend needs but the headless API does not expose.
+#
+# The compiled frontend assets from frontend/dist/ are embedded into the binary
+# at compile time via rust-embed, producing a single self-contained executable.
+
+[package]
+name = "neuroncite-web"
+description = "Browser-based web frontend server for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Forward backend-ort to neuroncite-api and neuroncite-embed so the web crate
+# can access model catalog functions through the API layer and the ORT runtime
+# download/probe functions in the embed crate's cache module.
+backend-ort = ["neuroncite-api/backend-ort", "neuroncite-embed/backend-ort"]
+# The gui feature compiles in tao (window management) and wry (WebView embedding)
+# to display the SolidJS frontend in a native OS window instead of opening the
+# default browser. When disabled, the existing opener-based browser launch is used.
+gui = [
+    "dep:tao", "dep:wry",
+    "dep:gtk", "dep:cairo-rs",
+    "dep:windows",
+    "dep:objc2", "dep:objc2-app-kit", "dep:objc2-foundation",
+]
+
+[dependencies]
+# Internal workspace crates
+neuroncite-core = { workspace = true }
+neuroncite-api = { workspace = true }
+neuroncite-pdf = { workspace = true }
+neuroncite-embed = { workspace = true }
+neuroncite-store = { workspace = true }
+neuroncite-llm = { workspace = true }
+
+# HTTP server framework (router, handlers, SSE response type)
+axum = { workspace = true }
+
+# Async runtime for broadcast channels and SSE stream adapters
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+# Serialization for JSON responses from web-specific handlers
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Structured logging for the SSE broadcast tracing layer
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Embeds the compiled frontend assets (frontend/dist/) into the binary at compile
+# time. The #[folder] attribute on the derived struct points to the Vite build
+# output directory.
+rust-embed = { workspace = true }
+
+# MIME type detection for serving embedded static files with correct Content-Type
+# headers based on file extension.
+mime_guess = { workspace = true }
+
+# Cross-platform "open URL in default browser" for launching the web UI on startup.
+opener = { workspace = true }
+
+# URL parsing and validation for SSRF protection in the Ollama proxy handlers.
+# User-supplied Ollama URLs are parsed and validated before forwarding requests.
+url = { workspace = true }
+
+# HTTP response types for SSE and static file serving
+axum-extra = { workspace = true }
+
+# Tower HTTP layers for static file serving headers (Cache-Control, ETag)
+tower-http = { workspace = true }
+
+# Connection pooling for handler access to SQLite
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+
+# Native OS file/folder dialog (IFileOpenDialog on Windows, NSOpenPanel on macOS).
+# Used by the /browse/native endpoint to open the platform folder picker.
+rfd = { workspace = true }
+
+# Native OS window management -- optional, compiled only with the gui feature.
+# Creates the application window that hosts the embedded WebView.
+tao = { workspace = true, optional = true }
+
+# WebView embedding -- optional, compiled only with the gui feature.
+# Renders the SolidJS frontend inside the tao window via platform WebView
+# (WebView2 on Windows, WebKit on macOS/Linux).
+wry = { workspace = true, optional = true }
+
+# PNG decoding for the transparent splash screen image. The splash PNG
+# (960x360 RGBA) is embedded via include_bytes! and decoded at runtime
+# to raw pixel data for platform-native rendering. This crate is already
+# compiled for neuroncite-pdf (OCR bitmap conversion), so adding it here
+# introduces zero additional compile time.
+image = { workspace = true }
+
+# --- Platform-specific dependencies for the transparent splash window ---
+#
+# The splash screen renders a pre-generated PNG with per-pixel alpha
+# transparency using native OS APIs (no WebView). Each platform requires
+# its own rendering API bindings. All crates listed below are already
+# transitive dependencies of tao 0.34.5 and add zero new system library
+# requirements -- Cargo unifies them with tao's existing dependency versions.
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# Win32 API bindings for GDI operations (UpdateLayeredWindow, CreateDIBSection)
+# used to render the splash PNG onto a WS_EX_LAYERED window with per-pixel alpha,
+# and for loading the multi-resolution ICO from the exe resources (LoadImageW)
+# to set crisp taskbar/window icons at the exact DPI-appropriate pixel size.
+# tao 0.34.5 depends on windows 0.61 with Win32_Graphics_Gdi already enabled.
+# Optional: only compiled with the gui feature (splash and native_window modules).
+windows = { version = "0.61", optional = true, features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# Objective-C runtime bindings for accessing NSWindow, NSImageView, and NSImage
+# to display the splash PNG on a transparent NSWindow. tao 0.34.5 already depends
+# on these exact crate versions for its own Cocoa window management.
+# Optional: only compiled with the gui feature (splash module).
+objc2 = { version = "0.6", optional = true }
+objc2-app-kit = { version = "0.3", optional = true, features = [
+    "NSImage", "NSImageView", "NSBitmapImageRep",
+    "NSView", "NSWindow", "NSColor", "NSGraphics",
+] }
+objc2-foundation = { version = "0.3", optional = true, features = ["NSData", "NSGeometry"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# GTK and Cairo bindings for drawing the splash PNG onto a transparent GTK window.
+# tao 0.34.5 depends on gtk 0.18 and cairo-rs 0.18 for its own window management.
+# Gated behind the gui feature because the splash module is only compiled when gui
+# is enabled. Without this gate, the server (no-gui) build would fail on Linux CI
+# runners that do not install the libgtk-3-dev headers.
+gtk = { version = "0.18", optional = true }
+cairo-rs = { version = "0.18", optional = true }
+
+[dev-dependencies]
+# Test harness: async test runtime, oneshot router testing, temp directories
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tower = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,39 @@
+# PDF annotation crate: highlights quoted text passages and adds comment
+# annotations to PDF documents. Operates standalone without requiring an
+# indexed session -- takes CSV/JSON input with title, author, and quote
+# fields, matches PDFs by filename, locates text via a 4-stage pipeline
+# (exact, normalized, fuzzy, OCR), and creates pdfium annotations.
+
+[package]
+name = "neuroncite-annotate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Enables OCR fallback (stage 4) in the text location pipeline. Requires
+# Tesseract to be installed at runtime. Forwards to neuroncite-pdf/ocr.
+ocr = ["neuroncite-pdf/ocr"]
+
+[dependencies]
+neuroncite-pdf = { workspace = true, features = ["pdfium"] }
+pdfium-render = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+csv = { workspace = true }
+strsim = { workspace = true }
+regex = { workspace = true }
+unicode-normalization = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+lopdf = { workspace = true }
+# Runtime dependency (not test-only): used in pipeline.rs to create temporary
+# snapshot directories for intermediate annotation processing artifacts.
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

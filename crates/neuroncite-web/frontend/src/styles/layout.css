@@ -1,0 +1,294 @@
+/* ================================================================
+   LAYOUT
+   Three-zone grid layout: topbar, tab content, statusbar.
+   The body zone renders one of six tabs (Sources, Indexing, Search,
+   Citations, Settings, Models). The search tab uses a resizable split
+   pane for settings and results.
+   ================================================================ */
+
+.app-shell {
+    display: grid;
+    grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* ---- Topbar ---- */
+/* The topbar doubles as the drag region for the frameless native window.
+   -webkit-app-region: drag allows the user to move the window by dragging
+   anywhere on the topbar. Interactive child elements (buttons, nav) are
+   excluded from dragging via -webkit-app-region: no-drag. */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 0 0 20px;
+    background: var(--color-topbar-bg);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--color-glass-border);
+    z-index: 100;
+    overflow: hidden;
+    -webkit-app-region: drag;
+    app-region: drag;
+}
+
+.topbar-logo {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+}
+
+/* "Cite" portion uses a diagonal gradient from purple to cyan, matching
+   the branding on the released website. The background-clip: text technique
+   fills only the text glyphs with the gradient, leaving the background
+   transparent behind them. */
+.topbar-logo span {
+    background: linear-gradient(135deg, var(--color-accent-purple) 30%, var(--color-accent-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Flexible spacer separating workflow tabs (Sources, Indexing, Search,
+   Citations) from utility tabs (Settings, Models) within the tab
+   navigation bar. Pushes utility tabs to the right edge. */
+.topbar-tab-spacer {
+    flex: 1;
+    min-width: 20px;
+}
+
+/* ---- Body (tab content container) ---- */
+.app-body {
+    overflow: hidden;
+    position: relative;
+}
+
+/* ---- Split Pane (used in the Search tab) ---- */
+.split-pane {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.split-pane-left {
+    overflow: hidden;
+    overflow-y: auto;
+    padding: 20px;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.split-pane-divider {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--color-divider);
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.split-pane-divider:hover,
+.split-pane-divider.dragging {
+    background: var(--color-divider-hover);
+}
+
+/* Wider invisible hit area for easier grabbing */
+.split-pane-divider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -4px;
+    right: -4px;
+}
+
+.split-pane-right {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    min-width: 0;
+}
+
+/* ---- Sources Fetch Tab ----
+   The Sources tab uses the SplitPane component for its resizable layout,
+   identical to the Indexing and Search tabs. No additional grid layout
+   is needed here. */
+
+/* ---- Models Tab ---- */
+.models-tab {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* ---- Settings Tab (consolidated utility panels: Maintenance, Doctor, Log, MCP) ---- */
+.settings-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Padding for each glass-card section within the settings tab */
+.settings-section {
+    padding: 16px 20px;
+}
+
+/* ---- Status Bar ---- */
+.statusbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    background: var(--color-statusbar-bg);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--color-glass-border);
+    font-size: 12px;
+    color: var(--color-text-muted);
+    z-index: 100;
+}
+
+.statusbar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.statusbar-separator {
+    width: 1px;
+    height: 16px;
+    background: var(--color-glass-border);
+}
+
+/* Status indicator dot used in the StatusBar for model status
+   (cyan dot for embedding model, purple dot for reranker) */
+.statusbar-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ---- Horizontal Resize Divider ----
+   Draggable horizontal bar between vertically stacked sections, styled
+   identically to the vertical split-pane divider. Used in the SearchTab
+   between the Query card and the Search Modes card to let the user resize
+   the query textarea height by dragging vertically. */
+.h-resize-divider {
+    height: 6px;
+    cursor: row-resize;
+    background: var(--color-divider);
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+    position: relative;
+    border-radius: 3px;
+}
+
+.h-resize-divider:hover,
+.h-resize-divider.dragging {
+    background: var(--color-divider-hover);
+}
+
+/* Taller invisible hit area for easier grabbing */
+.h-resize-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -4px;
+    bottom: -4px;
+}
+
+/* ---- Section Title (used in IndexingTab / SourcesTab / SettingsTab glass-cards) ---- */
+.section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-bottom: 12px;
+}
+
+/* ---- Responsive: Tablet (<=1024px) ---- */
+@media (max-width: 1024px) {
+    .split-pane {
+        flex-direction: column;
+    }
+
+    .split-pane-left {
+        min-width: unset;
+        width: 100%;
+        max-height: 40vh;
+    }
+
+    .split-pane-divider {
+        width: 100%;
+        height: 6px;
+        cursor: row-resize;
+    }
+
+    .split-pane-right {
+        width: 100%;
+    }
+}
+
+/* ---- Responsive: Mobile (<768px) ---- */
+@media (max-width: 768px) {
+    .topbar {
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    .topbar-logo {
+        font-size: 15px;
+    }
+
+    .topbar-tabs {
+        gap: 0;
+    }
+
+    .topbar-tab {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .split-pane-left,
+    .split-pane-right {
+        padding: 12px;
+    }
+
+    .models-tab,
+    .settings-tab {
+        padding: 12px;
+    }
+
+    .statusbar {
+        padding: 0 12px;
+        font-size: 11px;
+        overflow-x: auto;
+    }
+
+    .statusbar-log-line {
+        max-width: 200px;
+    }
+
+    .log-popup {
+        height: 50vh;
+    }
+
+    .modal-panel {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+}

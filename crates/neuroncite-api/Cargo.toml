@@ -1,0 +1,103 @@
+# neuroncite-api: The axum-based REST API server with shared application state,
+# route definitions, request/response types, the GPU Worker module that serializes
+# all embedding and reranking access through priority channels, and OpenAPI
+# specification generation.
+
+[package]
+name = "neuroncite-api"
+description = "REST API server and GPU worker for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Forward the backend-ort feature to neuroncite-embed so the API server
+# can access model catalog functions (find_model_config, supported_model_configs)
+# for resolving vector dimensions during index session creation.
+# The binary crate enables this through its own feature forwarding.
+backend-ort = ["neuroncite-embed/backend-ort"]
+# pdfium feature: signals that the pdfium extraction backend is compiled in.
+# Forwarded from the binary crate so that health.rs can report accurate
+# extraction backend availability via cfg!(feature = "pdfium").
+pdfium = []
+# ocr feature: signals that Tesseract OCR is compiled in. Forwarded from
+# the binary crate for the same health-reporting purpose.
+ocr = []
+
+[dependencies]
+# Internal workspace crates
+neuroncite-core = { workspace = true }
+neuroncite-pipeline = { workspace = true }
+neuroncite-chunk = { workspace = true }
+neuroncite-embed = { workspace = true }
+neuroncite-pdf = { workspace = true }
+neuroncite-store = { workspace = true }
+neuroncite-search = { workspace = true }
+neuroncite-annotate = { workspace = true, features = ["ocr"] }
+neuroncite-citation = { workspace = true }
+neuroncite-html = { workspace = true }
+neuroncite-llm = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Structured logging
+tracing = { workspace = true }
+
+# Async runtime and HTTP server
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Serialization for JSON request/response bodies
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# OpenAPI specification generation from handler annotations
+utoipa = { workspace = true }
+
+# Unique identifier generation for jobs and idempotency keys
+uuid = { workspace = true }
+
+# Lock-free atomic pointer swap for HNSW index hot-reloading in AppState
+arc-swap = { workspace = true }
+
+# Content hashing for deduplication, integrity checks, and bearer token storage
+sha2 = { workspace = true }
+
+# Constant-time byte comparison for bearer token authentication
+subtle = { workspace = true }
+
+# Concurrent hash map for per-IP auth failure rate limiting
+dashmap = { workspace = true }
+
+# Porter stemmer for keyword overlap computation in the verify endpoint
+rust-stemmers = { workspace = true }
+
+# SQLite connection pooling (needed for type references in AppState)
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+rusqlite = { workspace = true }
+
+# Parallel CPU-bound PDF extraction in the shared indexer pipeline
+rayon = { workspace = true }
+
+# Timestamp formatting for report files (failed_sources.csv/xlsx)
+chrono = { workspace = true }
+
+# Excel workbook generation for the failed-sources report
+rust_xlsxwriter = { workspace = true }
+
+# URL parsing and validation for SSRF prevention in fetch_sources
+url = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+reqwest = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,8 @@
+# Rust toolchain specification for the NeuronCite workspace.
+# resolver = "3" in Cargo.toml requires Rust 1.85 or later.
+# Some workspace dependencies (cookie_store 0.22, time 0.3.47) require Rust 1.88
+# or later, which sets the effective minimum for the full dependency tree.
+# Using "stable" tracks the latest stable Rust release. Developers and CI jobs
+# should install the stable toolchain via rustup.
+[toolchain]
+channel = "stable"

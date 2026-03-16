@@ -1,0 +1,818 @@
+% =============================================================================
+% The Reproducibility Crisis in Artificial Intelligence:
+% Statistical Biases, Benchmark Limitations, and Methodological Solutions
+% =============================================================================
+\documentclass[12pt, a4paper]{article}
+
+% --- Encoding and language ---------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% --- Typography and layout ---------------------------------------------------
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% --- Bibliography ------------------------------------------------------------
+\usepackage[numbers,sort&compress]{natbib}
+\bibliographystyle{unsrtnat}
+
+% --- Cross-references and hyperlinks -----------------------------------------
+\usepackage[
+  colorlinks  = true,
+  linkcolor   = blue!70!black,
+  citecolor   = blue!70!black,
+  urlcolor    = blue!60!black,
+  bookmarks   = true,
+  pdfauthor   = {},
+  pdftitle    = {The Reproducibility Crisis in Artificial Intelligence},
+  pdfsubject  = {Reproducibility, Machine Learning, Benchmarking},
+]{hyperref}
+\usepackage[nameinlink]{cleveref}
+
+% --- Miscellaneous -----------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+% =============================================================================
+\title{%
+  The Reproducibility Crisis in Artificial Intelligence:\\[4pt]
+  \large Statistical Biases, Benchmark Limitations,\\
+  and Methodological Solutions%
+}
+
+\author{}
+\date{\today}
+
+% =============================================================================
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% -----------------------------------------------------------------------------
+% Abstract
+% -----------------------------------------------------------------------------
+\begin{abstract}
+\noindent
+Empirical research in Artificial Intelligence (AI) depends heavily on
+data-driven experiments, benchmarks, and complex software--hardware
+ecosystems.  This dependence creates distinctive risks for
+reproducibility and reliable inference that fall into three broad
+categories: \emph{(i)}~statistical biases---including p-hacking
+analogues that arise from the many degrees of freedom in model and
+training decisions, as well as selection and publication biases;
+\emph{(ii)}~systematic over-adaptation to benchmarks, encompassing
+adaptive misuse of holdout sets and Goodhart effects; and
+\emph{(iii)}~methodological error classes such as overfitting, dataset
+leakage, duplicate samples, and label errors, all of which can
+substantially distort reported performance figures.
+
+Meta-research and community programmes have documented persistent
+shortcomings in the reporting of code, data, and experimental
+configurations for years, yet they also demonstrate that institutional
+interventions---checklists, artifact reviews, reproducibility
+challenges---can trigger measurable behavioural change
+\cite{Pineau2021,NeurIPSChecklist2023}.
+
+This paper synthesises the scientific literature on the
+``reproducibility crisis'' in AI along statistical, infrastructural, and
+governance-related dimensions \cite{Goodman2016,NationalAcademies2019}.
+Furthermore, it presents a solution framework that combines Open Science
+practices, technical infrastructure (versioning, provenance, packaging),
+dataset governance (documentation standards), and automated citation and
+evidence verification to raise the validity of empirical AI results and
+to reduce the perverse incentives of the benchmark ecosystem.
+
+\medskip\noindent
+\textbf{Keywords:}
+reproducibility, replication, p-hacking, publication bias, dataset
+leakage, benchmarking, adaptive data analysis, Open Science, data and
+software citation, provenance, versioning, evidence and citation
+verification.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Introduction}
+\label{sec:introduction}
+% =============================================================================
+
+Reproducibility and replication are cornerstones of cumulative science,
+yet in practice they are compromised by statistical, social, and
+infrastructural factors across many disciplines.  The very terminology
+remains incompletely standardised; a key finding of meta-science is that
+precise conceptual work---for instance, distinguishing
+\emph{methods reproducibility}, \emph{results reproducibility}, and
+\emph{inferential reproducibility}---is a prerequisite for
+operationalising crisis diagnoses and evaluating interventions at all
+\cite{Goodman2016}.
+
+In AI---including machine learning (ML), deep learning, and
+data-intensive subfields such as natural language processing (NLP),
+computer vision, and reinforcement learning (RL)---the classical
+reproducibility risks are amplified by three structural properties of
+the field:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Stochastic training and fragile baselines.}
+    Central empirical claims frequently rest on small performance
+    differences on benchmarks, yet these differences are subject to
+    substantial fluctuation from stochastic training processes,
+    non-deterministic execution environments, and hyperparameter search
+    \cite{Henderson2018,Bouthillier2021}.
+
+  \item \textbf{Complex, under-documented artefacts.}
+    Research artefacts---code, data, models, preprocessing pipelines,
+    dependencies, hardware and driver versions---are highly complex and
+    often insufficiently documented or archived, impeding both
+    repetition and independent verification
+    \cite{Peng2011,Stodden2016,Gundersen2020}.
+
+  \item \textbf{Benchmark-driven incentives and Goodhart dynamics.}
+    Benchmarks and leaderboards create powerful incentive structures.
+    When a metric becomes a target, it can lose its validity as a
+    measurement instrument (Goodhart effect), particularly through
+    adaptive overuse of static test sets and through metrics that lend
+    themselves to gaming \cite{Hsia2024,Raji2021}.
+\end{enumerate}
+
+The scientific community has responded over the past several years with
+programmatic and infrastructural measures: conferences have implemented
+checklists and code policies; artifact review processes and
+reproducibility challenges create new forms of publication and
+recognition; Open Science and FAIR principles target the findability,
+reusability, and machine-actionability of research objects
+\cite{NeurIPSChecklist2023,Wilkinson2016,Nosek2015}.  At the same time,
+the literature shows that technical solutions (versioning, provenance,
+packaging, archivability) have limited effectiveness without adequate
+governance and without statistical methodological discipline, because
+biases can already arise in the research logic itself---in hypothesis
+generation, model selection, and reporting and publication dynamics
+\cite{Kapoor2023,Munafo2017}.
+
+The goal of this paper is a deep, source-based synthesis of the
+reproducibility problem in AI along the following dimensions: statistical
+foundations (p-hacking, publication bias), overfitting and dataset
+leakage, benchmark optimisation problems, meta-research evidence,
+Open Science initiatives, technical solutions (versioning, dataset
+governance, automated citation verification), case studies, and a
+concluding discussion that integrates these threads into a unified
+solution framework.
+
+% =============================================================================
+\section{Statistical and Methodological Causes}
+\label{sec:statistical}
+% =============================================================================
+
+Before examining AI-specific pathologies, it is useful to establish the
+broader statistical context in which the reproducibility crisis is
+rooted.  Two mutually reinforcing mechanisms---flexible analysis
+decisions and selective publication---generate systematic distortions
+that inflate the apparent strength and reliability of empirical findings.
+This section traces these mechanisms from their general-science origins
+into their AI-specific manifestations, and then turns to the
+methodological error classes (overfitting, leakage, contamination) that
+amplify the problem.
+
+% -----------------------------------------------------------------------------
+\subsection{Statistical Foundations: p-Hacking Analogues, Multiple
+            Degrees of Freedom, and Publication Bias}
+\label{sec:phacking}
+% -----------------------------------------------------------------------------
+
+The classical p-hacking debate demonstrates that flexible analysis
+decisions (``researcher degrees of freedom'') and selective reporting can
+render significant results more probable even in the absence of robust
+effects.  This phenomenon is well documented across many empirical
+sciences and is discussed as a central mechanism behind false-positive
+findings \cite{Simmons2011,Ioannidis2005,Head2015}.
+
+In AI, a functional analogue manifests not as manipulation of individual
+p-values but as optimisation across many degrees of freedom: choice of
+architecture, data augmentation, preprocessing, optimiser, training
+budget, random seed, hyperparameter space, and selection criterion
+(e.g., best single run versus mean across seeds).  When only the best
+configuration is subsequently reported, a selection bias emerges that is
+formally equivalent to the multiple-testing problem
+\cite{Bouthillier2021,Henderson2018}.
+
+Several studies emphasise that pure ``determinism'' reproducibility
+(same code, same seed, identical environment) is insufficient to secure
+inferential robustness.  Instead, variance from multiple sources---data
+sampling, initialisation, hyperparameter choice, implementation
+details---must be modelled and integrated into the interpretation of
+results \cite{Bouthillier2021,Hagmann2023}.  This demand is closely
+related to statistical guidelines for correct algorithm-comparison
+inference, such as appropriate tests over multiple datasets or
+experimental conditions \cite{Demsar2006,Dror2018}.
+
+Publication bias (the ``file drawer problem'') further compounds the
+distortion: when ``positive'' or ``state-of-the-art'' results enjoy a
+higher publication probability than null or negative results, effect
+sizes and progress rates are systematically overestimated.  This is well
+established in meta-analyses and population-based studies of publication
+dynamics \cite{Franco2014,Fanelli2010}.  For AI, the analogy is
+discussed primarily as an incentive problem: benchmarks, competitions,
+and community norms frequently reward incremental performance gains,
+whereas replication studies, negative results, or ``ablation null
+findings'' receive lesser recognition.  Open Science manifestos and
+recommendations for reforming incentive and publication systems address
+these dynamics explicitly \cite{Munafo2017,Nosek2015}.
+
+Methodological counter-reactions from the philosophy of science and
+meta-science literature include, among others, preregistration,
+Registered Reports (review before data analysis or before knowledge of
+results), and stronger transparency requirements.  Registered Reports
+have been established as a publication format to reduce
+results-orientation and to tie the publication decision more closely to
+methodology than to significance \cite{Chambers2013}.  In AI, direct
+transfer is not trivial (e.g., iterative development, high experimental
+costs), yet the core principle---separating the analysis plan from the
+results---remains conceptually highly relevant as a countermeasure
+against selective reporting \cite{Goodman2016}.
+
+% -----------------------------------------------------------------------------
+\subsection{Overfitting and Dataset Leakage: Forms, Causes, and
+            Empirical Evidence}
+\label{sec:leakage}
+% -----------------------------------------------------------------------------
+
+The general statistical biases described above are compounded by a set
+of methodological error classes specific to the data-centric nature of
+ML research.  Overfitting in AI is not merely a theoretical concept of
+the learning curve; it is tightly coupled with benchmark culture,
+data-pipeline design, and evaluation practices.
+
+A central error class is \textbf{dataset leakage}: information from test
+or validation data enters training or tuning processes, whether
+implicitly or explicitly---for instance through incorrect splitting,
+preprocessing on the full dataset, leakage via temporal indices, or
+meta-feature engineering \cite{Kapoor2023}.  A comprehensive,
+cross-domain study argues that leakage in ML-based science is
+widespread and has in numerous cases led to ``wildly overoptimistic
+conclusions''; it further proposes standardised ``Model Info Sheets'' to
+systematically audit leakage risks \cite{Kapoor2023}.
+
+In domains with highly structured data (e.g., medical imaging), even the
+\emph{granularity} of the split---patient/study/volume level versus
+image/slice level---can determine whether seemingly outstanding
+performance is real or artificially inflated by leakage.  A detailed
+analysis of optical coherence tomography (OCT) image classification
+shows that inappropriate splits (with overlap between training and test
+sets) can markedly inflate accuracy figures, reporting large performance
+differences between correct and incorrect splitting strategies
+\cite{Tampu2022}.
+
+Alongside ``classical'' leakage, a second, structurally related problem
+class exists: \textbf{duplicates and near-duplicates} between training
+and test sets.  For heavily used image datasets, it has been shown that
+a non-trivial proportion of test examples have duplicates in the
+training set; this can distort evaluation comparability because models
+effectively (partially) train on test data or benefit from memorisation.
+A study on CIFAR-10/100 identifies near-duplicates in the test set,
+replaces them with fresh examples (``ciFAIR''), and observes significant
+accuracy drops---a direct indication that benchmark values can be
+systematically influenced by data overlap \cite{Barz2020}.
+
+A third problem source consists of \textbf{label errors in test sets}.
+A systematic characterisation of label errors across several popular
+benchmarks not only identifies the presence of errors but also
+quantifies their magnitude (e.g., error proportions in commonly used
+test/validation splits) and discusses the consequences for benchmark
+stability and model selection \cite{Northcutt2021}.  Even when rankings
+may in some cases remain robust, the normative problem persists: if the
+measurement basis itself is flawed, absolute performance values and fine
+distinctions---which frequently drive publication decisions---are less
+informative \cite{Northcutt2021}.
+
+Finally, the proliferation of very large pretrained models (particularly
+large language models, LLMs) has introduced a new form of leakage:
+\textbf{benchmark contamination through pretraining data}.  When
+benchmark items or semantically close paraphrases are contained in
+web-scale corpora, models can memorise portions of the evaluation data.
+Several studies develop detection methods, taxonomise contamination
+types, and propose documentation artefacts (e.g., ``Benchmark
+Transparency Cards'') to improve training-data transparency and
+comparability \cite{XuR2024,XuC2024,Choi2025}.
+
+% =============================================================================
+\section{Limitations of Benchmarks and Optimisation Dynamics}
+\label{sec:benchmarks}
+% =============================================================================
+
+The methodological problems identified in the previous section do not
+exist in isolation; they interact with the \emph{institutional}
+structure of how AI research is evaluated.  Benchmarks simultaneously
+serve as measurement instruments and as steering mechanisms for research
+attention and resource allocation.  This dual role creates optimisation
+dynamics that can undermine the very validity benchmarks are designed to
+ensure.
+
+% -----------------------------------------------------------------------------
+\subsection{Benchmark Optimisation as an Adaptive Inference Problem}
+\label{sec:adaptive}
+% -----------------------------------------------------------------------------
+
+In this respect, benchmarks resemble adaptive data analysis: hypotheses,
+models, and pipeline decisions are iteratively generated based on
+benchmark feedback.  The statistics literature shows that repeated,
+adaptive use of a holdout dataset can undermine the validity of
+classical inference assumptions, because the ``holdout'' becomes
+implicitly integrated into the decision space \cite{Dwork2015}.
+
+In ML competitions and leaderboards this problem is operationally
+particularly visible: participants can overfit their solutions to a
+public leaderboard through repeated submission.  Theoretical work models
+this risk and proposes mechanisms designed to reduce leaderboard
+overfitting by disclosing holdout information only in a restricted,
+adaptation-resilient manner \cite{Blum2015}.  This perspective transfers
+to scientific benchmarks, where iterative tuning and ``leaderboard
+chasing'' are typical research practices, especially when improvements
+on the order of a few tenths of a percentage point suffice for
+publication \cite{Bouthillier2021}.
+
+% -----------------------------------------------------------------------------
+\subsection{Goodhart Effects, ``General'' Benchmarks, and External
+            Validity}
+\label{sec:goodhart}
+% -----------------------------------------------------------------------------
+
+When a metric becomes a target, it can lose its informational value
+(Goodhart effect).  In AI, this manifests in several forms:
+\emph{(i)}~models learn spurious correlations and shortcuts instead of
+intended capabilities; \emph{(ii)}~task metrics can be systematically
+``gamed'' without improving semantic quality; \emph{(iii)}~benchmark
+design can unintentionally steer development toward metrically
+favourable but scientifically or socially less valid properties.
+Specific analyses demonstrate Goodhart mechanisms even within
+specialised benchmark families (e.g., explanation benchmarks), where
+scores can be substantially increased without genuine improvement in
+explanatory substance \cite{Hsia2024}.
+
+The critique of ``general'' benchmarks goes further, arguing that a
+small canon of prominent datasets in various subfields can be
+misinterpreted as a proxy for ``general progress.''  A positional
+analysis describes such general benchmarks as structurally incompatible
+with strong claims of general capability, because benchmarks are
+necessarily under-specified and the reinterpretation of state-of-the-art
+(SOTA) performance on a benchmark as ``general intelligence'' is
+epistemically unjustified \cite{Raji2021}.
+
+The external-validity conflict is further exacerbated by
+\textbf{dataset shift}: when the data distribution differs between
+training and test sets---or between benchmark and deployment---benchmark
+performance can only limitedly predict real-world performance.  The
+problem has been discussed for years under the headings ``dataset
+shift'' and ``covariate shift,'' including consequences for evaluation
+design and robust modelling \cite{QuinoneroCandela2009}.  Empirical
+benchmark research replicates this insight with new test sets or ``fresh
+samples'': when models are adapted to a static test-set canon over
+years, performance drops on newly drawn, but ``equivalently intended,''
+test sets can be interpreted as indicators of benchmark overfitting
+\cite{Recht2019}.
+
+% -----------------------------------------------------------------------------
+\subsection{Benchmark Design Beyond Leaderboards: Suites Instead of
+            Single-Number Rankings}
+\label{sec:suites}
+% -----------------------------------------------------------------------------
+
+A growing strand of the literature argues for transitioning from
+leaderboards to \textbf{benchmark suites}: instead of optimising ``one
+number'' (and hence one ranking), different metrics, usage scenarios,
+and trade-offs should be made explicit.  This is articulated
+particularly clearly in fairness evaluation: ``fairness'' is
+conceptually plural and application-dependent; a leaderboard that
+reduces fairness to a single score produces target distortions and can
+obscure potential harms.  Benchmark suites, by contrast, are intended to
+make different perspectives and measurement dimensions visible, thereby
+increasing both scientific validity and governance-related
+decision-making capacity \cite{Wang2024}.
+
+% =============================================================================
+\section{Evidence from Meta-Research and Open Science Initiatives}
+\label{sec:meta}
+% =============================================================================
+
+Having established the theoretical mechanisms through which biases and
+benchmark dynamics compromise AI research, we now turn to the empirical
+evidence.  Meta-research quantifies the extent of the problem, while
+Open Science initiatives represent the community's institutional
+response.
+
+% -----------------------------------------------------------------------------
+\subsection{Meta-Research: Findings on Documentation and Reproduction
+            Practice in AI}
+\label{sec:metaresearch}
+% -----------------------------------------------------------------------------
+
+Meta-research in AI consistently shows that pure results reports
+frequently do not contain sufficient information to reliably reproduce
+experiments.  A documentation-oriented analysis spanning several major AI
+conferences (sample across multiple years) indicates, for example, that
+only a small proportion of the examined papers share centrally relevant
+artefacts (including code, results/outputs, hypotheses/predictions) and
+that experimental details (dependencies, setup parameters) can be
+severely under-documented \cite{Gundersen2020}.  These findings should
+not be read as mere ``compliance'' criticism; they represent an
+\emph{epistemic} risk: when essential pipeline decisions are not auditable,
+it is difficult to distinguish whether a result rests on a robust
+methodological innovation or on unreported, potentially data-specific or
+chance-driven factors \cite{Goodman2016}.
+
+Meta-research on variance and benchmarking additionally reveals that
+benchmark values are often reported as point estimates despite being
+subject to stochastic and pipeline-related fluctuations.  Work on
+``variance in machine learning benchmarks'' models the benchmark
+pipeline and argues that common comparison practices underestimate
+variance, thereby producing a distorted picture of methodological
+superiority \cite{Bouthillier2021}.  For subfields such as reinforcement
+learning, this problem is formulated particularly sharply:
+non-determinism in environments and intrinsic variance can render
+purported SOTA improvements difficult to interpret without significance
+metrics and robust reporting standards \cite{Henderson2018}.
+
+Finally, meta-research shows that not only \emph{results reproduction}
+but also \emph{inferential reproducibility} (the validity of
+conclusions across groups of tasks/datasets) constitutes a distinct
+target criterion: rather than ``determinising variance away'' (e.g., by
+fixing a single seed), the proposal is to deliberately vary variance
+sources and to model them statistically (e.g., mixed-effects models) in
+order to obtain generalisable statements \cite{Hagmann2023}.
+
+% -----------------------------------------------------------------------------
+\subsection{Open Science Initiatives: Checklists, Artifact Reviews, and
+            Community Programmes}
+\label{sec:openscience}
+% -----------------------------------------------------------------------------
+
+At the institutional level, several initiatives have emerged in recent
+years to raise reproducibility in AI.  A central example is the
+introduction of \textbf{paper checklists} by major ML conferences, which
+query best practices regarding reproducibility, transparency, ethics,
+and societal impact; the guidelines emphasise that the checklist must not
+be removed and functions as a component of the submission
+\cite{NeurIPSChecklist2023}.
+
+An empirically well-documented intervention case is a conference
+\textbf{reproducibility programme} that combines a code-submission
+policy, a reproducibility challenge, and a checklist.  The programme
+report describes, among other things, a marked increase in voluntary
+code submissions (from below 50\% to nearly 75\% within one year) and
+further reports that a portion of reviewers rated the checklist as
+helpful.  At the same time, it emphasises that robust evidence on
+long-term quality effects remains limited, underscoring the need for
+further meta-evaluations of such interventions \cite{Pineau2021}.
+
+Beyond conference mechanisms, \textbf{artifact review and badging
+programmes} (particularly in the computing ecosystem) define criteria
+under which artefacts are evaluated as repeatable/reproducible and how
+this is made visible.  Such frameworks aim to close the ``artefact gap''
+between paper and executable research and to create incentives for clean
+packaging and documentation practices \cite{ACMArtifactReview2020}.
+
+Open Science is further supported by broad, cross-disciplinary
+principles and manifestos that formulate transparency, openness, and
+reproducibility as systemic goals.  Key reference points include
+\emph{(i)}~recommendations for promoting an open research culture
+\cite{Nosek2015}, \emph{(ii)}~guidelines for the reproducibility of
+computational methods, particularly code and data provision
+\cite{Stodden2016,Peng2011}, and \emph{(iii)}~FAIR principles, which
+emphasise the machine-actionability of research objects
+\cite{Wilkinson2016}.
+
+% =============================================================================
+\section{Technical and Organisational Solutions}
+\label{sec:solutions}
+% =============================================================================
+
+The preceding sections have established that the reproducibility crisis
+in AI arises from an interplay of statistical, benchmark-related, and
+documentation deficits.  Addressing these deficits requires not only
+cultural and procedural change but also concrete technical
+infrastructure and governance mechanisms.  This section reviews solutions
+along three axes: versioning and executable reproduction, dataset
+governance, and automated verification.
+
+% -----------------------------------------------------------------------------
+\subsection{Versioning, Provenance, and Executable Reproduction}
+\label{sec:versioning}
+% -----------------------------------------------------------------------------
+
+Technical reproducibility in AI requires the controlled management of
+code, data, model artefacts, and execution environments.  Data and code
+versioning systems aim to make states (snapshots) of data and pipelines,
+as well as their dependencies, traceable.
+
+One example is \textbf{DataLad}, a distributed system for the joint
+management of code and data that connects Git-based workflows with
+large-scale data logistics and is explicitly oriented toward
+reproducible research and FAIR compatibility \cite{Halchenko2021}.  For
+Data Version Control (DVC), empirical analyses of usage in open-source
+ML development characterise DVC as a tool for versioning and
+reproducibility of ML artefacts \cite{Pacheco2024}.
+
+A second core building block is the \textbf{long-term archiving and
+referenceability of software sources}.  Initiatives for comprehensive
+source-code archiving argue that persistent identifiers and systematic
+archiving can address central reproducibility barriers by reducing
+``link rot'' and the problem of untraceable code states
+\cite{DiCosmo2018}.
+
+Third, \textbf{packaging tools and containerised reproduction
+environments} become relevant: reproducibility frequently fails due to
+``dependency hell.''  Tools for packaging experiments extract
+dependencies and enable cross-platform re-execution; corresponding
+systems have been positioned at data-management and database conferences
+as reproducibility infrastructure \cite{Chirigati2016,Rampin2018}.
+Complementary platform approaches bundle code, data, dependencies, and
+metadata in a ``capsule,'' check executability, and assign DOIs for
+citability and archiving; this is described in the literature as a way
+to reduce review and reproduction burden \cite{Cheifet2021}.
+
+% -----------------------------------------------------------------------------
+\subsection{Dataset Governance: Documentation, Quality Assurance, and
+            Citation Practices}
+\label{sec:governance}
+% -----------------------------------------------------------------------------
+
+Many reproducibility problems are data-driven.  Consequently, a research
+line has emerged that understands dataset and model documentation as a
+governance instrument.
+
+\textbf{Datasheets for Datasets} propose standardised documents that
+make the motivation, composition, collection process, recommended use,
+and limitations of datasets transparent; in peer-reviewed form, such
+standards have been prominently published \cite{Gebru2021}.  For NLP,
+\textbf{Data Statements} exist as a professional practice format that
+systematically describes data provenance, sampling, annotation, and
+potential bias consequences to enable better science and bias mitigation
+\cite{Bender2018}.  For models, comparable documentation formats
+(\textbf{Model Cards}) have been proposed that disclose performance
+profiles, deployment contexts, and limitations \cite{Mitchell2019}.
+
+A leakage-specific extension of this governance idea takes the form of
+\textbf{Model Info Sheets} as a checklist format that addresses concrete
+leakage types and thereby supports the detection of methodological
+errors prior to publication.  Empirical evidence from ML-based science
+suggests that such systematic audit frameworks are necessary because
+leakage errors are frequently not discernible from paper text alone
+\cite{Kapoor2023}.
+
+\textbf{Citation practices} constitute a further governance element
+because they govern reusability, attribution, and machine-linkability of
+research objects.  For data, a Joint Declaration has been formulated
+that describes data citation as part of reproducible scholarship and
+calls for machine- and human-readable citations \cite{FORCE11_2014}.
+For software, software citation principles have been published in
+peer-reviewed form, defining specificity (version), persistence, and
+attribution as core elements \cite{Smith2016}.  In practice, these goals
+are supported by formats such as the Citation File Format (CFF), in
+which citable metadata are stored in a machine-readable manner
+\cite{Druskat2021}.
+
+Finally, \textbf{research packaging standards} (e.g., RO-Crate) address
+the problem that paper text is often incomplete or ambiguous for
+automated systems.  RO-Crate is described as a lightweight,
+community-driven packaging format that bundles research artefacts and
+metadata in a machine-readable fashion, thereby supporting FAIR goals
+and reproducibility \cite{SoilandReyes2022}.
+
+% -----------------------------------------------------------------------------
+\subsection{Automated Citation and Evidence Verification Systems}
+\label{sec:verification}
+% -----------------------------------------------------------------------------
+
+With the growth of scientific literature and the advent of AI-generated
+content, the question of whether citations actually support the
+assertions they accompany becomes increasingly pressing.  The connection
+to the preceding infrastructure is direct: even the best versioning and
+documentation frameworks provide limited value if the textual claims in
+papers do not accurately reference the artefacts they are supposed to
+describe.
+
+The NLP literature has formalised benchmarks and tasks for this purpose:
+\textbf{scientific claim verification} establishes datasets in which
+claims are linked to evidence texts and annotated as
+``supports/refutes,'' enabling the evaluation of systems for evidence
+retrieval and reasoning \cite{Wadden2020}.  Complementary subtasks such
+as \textbf{cite-worthiness detection} (where is a citation needed?) and
+\textbf{citation intent classification} have been developed, forming
+structural precursors to automated citation quality assurance
+\cite{Wright2021}.
+
+More recent benchmarks explicitly evaluate whether language models can
+correctly attribute scientific claims and discuss the question of
+whether systems can reliably perform the mapping ``claim $\to$ source.''
+Such work positions automated attribution both as a means against
+hallucinations and as a building block for future verification systems
+\cite{Press2024}.  At the system level, proposals exist for
+\textbf{citation verification} through full-text analysis with
+classification taxonomies (e.g., supported/unsupported) and provision of
+evidence snippets; corresponding systems argue that scalable citation
+checking is integrity-relevant, especially for peer review and
+AI-generated content \cite{SemanticCite2025}.
+
+For the reproducibility crisis in AI, this line of work is particularly
+relevant for two reasons.  First, automated citation checking can
+\emph{enforce} the referencing of concrete artefacts (dataset versions,
+code snapshots, model hashes) by detecting missing or incorrect
+references and suggesting corrections.  Second, it can serve as a
+quality-assurance mechanism in review pipelines to reduce the
+discrepancy between textual assertions and actual
+evidence/artefacts.  Both roles are explicitly formulated as target
+directions in the literature---integrity, peer-review relief, and
+evidence-based justification \cite{SemanticCite2025}.
+
+% =============================================================================
+\section{Case Studies}
+\label{sec:casestudies}
+% =============================================================================
+
+The mechanisms and solutions discussed so far can be illustrated through
+concrete cases drawn from different AI subfields.  Each case study
+highlights a different facet of the reproducibility crisis and connects
+back to the theoretical framework established in the preceding sections.
+
+% -----------------------------------------------------------------------------
+\subsection{Reinforcement Learning: Variance, Non-Determinism, and
+            Inference Uncertainty}
+\label{sec:case_rl}
+% -----------------------------------------------------------------------------
+
+An influential analysis of deep reinforcement learning problematises the
+fact that non-deterministic environments and methodological variance can
+render reported performance gains difficult to interpret when
+significance measures, multiple runs, and standardised reporting
+practices are lacking.  The finding is not merely an engineering
+problem; it is a \emph{statistical inference problem}: without variance
+modelling, it remains unclear whether differences are robust or
+chance-driven \cite{Henderson2018}.  This case exemplifies the
+p-hacking analogue discussed in \cref{sec:phacking}: researchers may
+select the best seed or environment configuration, generating an
+illusory impression of progress.
+
+% -----------------------------------------------------------------------------
+\subsection{Computer Vision Benchmarks: Near-Duplicates and Measurement
+            Foundations}
+\label{sec:case_cv}
+% -----------------------------------------------------------------------------
+
+The ciFAIR study demonstrates that near-duplicates between training and
+test sets exist in heavily used benchmarks and that a ``purged'' test set
+can reveal considerable performance losses.  The study interprets this
+as an indication that benchmark progress can be partly facilitated by
+memorisation and that benchmark design and dataset hygiene are central
+components of scientific validity \cite{Barz2020}.  Complementary work
+on label errors in test sets shows that even test data cannot be
+presupposed as ``ground truth'' and that label quality can influence the
+stability of benchmark comparisons \cite{Northcutt2021}.  Together,
+these findings reinforce the leakage and data-quality concerns raised in
+\cref{sec:leakage}.
+
+% -----------------------------------------------------------------------------
+\subsection{LLM Evaluation: Contamination and Dynamic Benchmarks}
+\label{sec:case_llm}
+% -----------------------------------------------------------------------------
+
+Several studies document that benchmark contamination---overlap between
+evaluation data and pretraining corpora---can inflate performance
+claims and undermine fair comparisons; proposed remedies include
+detection pipelines, survey systematisations, and transparency artefacts
+\cite{XuR2024,XuC2024}.  At the same time, more recent analyses show
+that the effect of contamination on generative benchmarks is causally
+modulated by parameters such as sampling temperature and
+solution/response length; this means that ``contamination'' must be
+modelled not as a binary problem but as a context-dependent source of
+bias \cite{Schaeffer2025}.
+
+In response, \textbf{contamination-limited benchmarks} have emerged
+that use frequently updated, objectively scorable tasks to reduce
+contamination risk and to increase the reliability of LLM evaluation
+\cite{LiveBench2024}.  This development represents a practical
+implementation of the benchmark-suite philosophy discussed in
+\cref{sec:suites}.
+
+% -----------------------------------------------------------------------------
+\subsection{ML-Based Science: Leakage as a Reproduction Error}
+\label{sec:case_mlscience}
+% -----------------------------------------------------------------------------
+
+The leakage meta-study in ML-based science demonstrates that leakage is
+not merely an internal ML error class but can have
+reproducibility-critical consequences for entire application domains.  In
+a reproduction study on civil-war prediction, it shows that the
+purported superiority of complex ML models disappears upon correction
+of leakage, thereby invalidating central conclusions of the original
+literature \cite{Kapoor2023}.  This case underscores the broader point
+made throughout this paper: performance claims that rest on compromised
+evaluation pipelines can propagate unchecked through the scientific
+record if reproducibility infrastructure and governance are absent.
+
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+% =============================================================================
+
+The evidence assembled in this paper paints a consistent picture: the
+``reproducibility crisis'' in AI is neither exclusively a problem of
+``missing code links'' nor solely a problem of ``poor scientific
+culture.''  Rather, it emerges from the interplay of statistical
+selection logic, benchmark incentive mechanisms, and the infrastructural
+complexity of computational experiments \cite{Goodman2016,Kapoor2023}.
+
+A central insight is that AI-typical degrees of freedom can assume the
+role of multiple hypothesis tests: configurations are iteratively
+optimised, and the final report often condenses this process into a
+single score.  The methodological consequence is that scientific
+standards must be oriented more strongly toward measurement
+uncertainties, variance components, and robust inference (e.g., multiple
+seeds, appropriate test protocols, effect sizes instead of ``best
+score'') \cite{Bouthillier2021,Hagmann2023}.
+
+Benchmarks fulfil an economic function (standardisation,
+comparability), but when misused they can generate epistemic damage:
+adaptive overfitting, Goodhart effects, conflation of proxy targets with
+``capabilities,'' and erosion of external validity through dataset
+shift.  This does not mean that benchmarks are obsolete; it means that
+their \emph{governance}---suites instead of leaderboards, regular
+updating/rotation, leakage mitigation, quality control of labels and
+duplicates---becomes a core component of scientific methodology
+\cite{Wang2024}.
+
+The intervention literature suggests that community mechanisms can be
+effective in shifting norms (e.g., rising code submission rates,
+establishment of checklists), but the evidence on long-term effects on
+research quality remains incomplete.  This implies a \emph{meta-evaluation
+imperative}: reproducibility programmes should themselves be understood
+as evaluable interventions whose effectiveness (quality, robustness,
+generalisability) is empirically tracked \cite{Pineau2021}.
+
+Technically, a design principle emerges: reproducibility requires a
+chain of \emph{referenceability} (persistent IDs), \emph{versioning}
+(code/data/models), \emph{packaging} (executable environments),
+\emph{documentation} (Datasheets / Data Statements / Model Cards / Info
+Sheets), and finally \emph{auditability} (including automated evidence
+and citation verification).  Each link addresses a different error
+class: versioning reduces ``invisible'' drift; packaging reduces
+execution barriers; documentation reduces interpretation and governance
+deficits; automated citation checking reduces ``paper-to-artefact''
+inconsistencies and raises the probability that claims actually rest on
+traceable evidence \cite{Halchenko2021,SoilandReyes2022}.
+
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% =============================================================================
+
+The reproducibility crisis in AI is best understood as a
+\emph{multi-layered validity problem}:
+\begin{enumerate}[label=(\roman*), leftmargin=*]
+  \item statistical biases through selection and reporting mechanisms;
+  \item methodological error classes such as leakage, overfitting,
+        duplicates, and erroneous labels;
+  \item a benchmark economy with adaptive overuse and Goodhart effects;
+        and
+  \item infrastructural fragility through complex software and data
+        dependencies \cite{Kapoor2023}.
+\end{enumerate}
+
+An effective solution approach must therefore simultaneously:
+\begin{enumerate}[label=(\alph*), leftmargin=*]
+  \item \textbf{modernise statistical inference practices}---variance
+        modelling, robust tests, transparent reporting standards;
+  \item \textbf{reform benchmark governance}---suites, updating, leakage
+        control;
+  \item \textbf{strengthen Open Science institutions}---checklists,
+        artifact review, replication publication; and
+  \item \textbf{expand technical infrastructure} toward versioned,
+        packaged, and citable research objects---complemented by
+        automated evidence and citation verification as a scaling
+        mechanism for quality assurance \cite{Pineau2021}.
+\end{enumerate}
+
+None of these measures is sufficient in isolation.  Statistical reform
+without infrastructure leaves researchers unable to share artefacts even
+when willing; infrastructure without governance risks creating
+technically reproducible but inferentially flawed research; governance
+without statistical discipline cannot prevent the selection biases that
+arise in research logic itself.  Only their \emph{combination}---a
+coherent framework spanning statistics, benchmarks, institutions, and
+technology---can credibly address the multi-dimensional nature of the
+crisis and rebuild confidence in the empirical foundations of artificial
+intelligence.
+
+% =============================================================================
+% Bibliography
+% =============================================================================
+\newpage
+\bibliography{reproducibility_crisis_ai}
+
+\end{document}

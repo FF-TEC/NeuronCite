@@ -1,0 +1,147 @@
+# =============================================================================
+# NeuronCite Docker Compose Configuration
+# =============================================================================
+# Provides deployment profiles for different GPU hardware and architectures:
+#
+#   NVIDIA GPU (x86_64):  docker compose --profile nvidia up -d
+#   AMD ROCm (x86_64):    docker compose --profile rocm up -d
+#   CPU only (x86_64):    docker compose --profile cpu up -d
+#   CPU only (ARM64):     docker compose --profile cpu-arm64 up -d
+#
+# Each profile builds and runs the NeuronCite container with the appropriate
+# GPU runtime, ONNX Runtime variant, and device passthrough configuration.
+# All profiles share the same persistent data volume.
+#
+# GPU profiles (nvidia, rocm) are restricted to linux/amd64 because CUDA
+# and ROCm execution providers are only available for x86_64.
+#
+# Stop:    docker compose --profile <profile> down
+# Logs:    docker compose --profile <profile> logs -f
+# Rebuild: docker compose --profile <profile> build --no-cache
+# =============================================================================
+
+services:
+
+  # --- NVIDIA GPU variant (CUDA + cuDNN, x86_64 only) ---
+  # Requires: NVIDIA GPU, NVIDIA Container Toolkit, --gpus flag
+  # Base image: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+  # ORT variant: onnxruntime-linux-x64-gpu (CUDA execution provider)
+  neuroncite-nvidia:
+    profiles: ["nvidia"]
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        GPU: nvidia
+        RUNTIME_BASE: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+    image: neuroncite:nvidia
+    container_name: neuroncite
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "3030:3030"
+    volumes:
+      - neuroncite-data:/data/Documents/NeuronCite
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3030/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # --- AMD ROCm variant (ROCm HIP, x86_64 only) ---
+  # Requires: AMD GPU with ROCm support, /dev/kfd and /dev/dri device access
+  # Base image: rocm/dev-ubuntu-22.04:6.4
+  # ORT variant: onnxruntime-linux-x64-rocm (ROCm execution provider)
+  neuroncite-rocm:
+    profiles: ["rocm"]
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        GPU: rocm
+        RUNTIME_BASE: rocm/dev-ubuntu-22.04:6.4
+    image: neuroncite:rocm
+    container_name: neuroncite
+    restart: unless-stopped
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+    ports:
+      - "3030:3030"
+    volumes:
+      - neuroncite-data:/data/Documents/NeuronCite
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3030/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # --- CPU-only variant (x86_64, no GPU acceleration) ---
+  # Runs on any x86_64 Linux system without GPU requirements. ONNX inference
+  # uses the CPU execution provider with OpenMP threading.
+  # Base image: ubuntu:22.04
+  # ORT variant: onnxruntime-linux-x64 (CPU-only)
+  neuroncite-cpu:
+    profiles: ["cpu"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        GPU: cpu
+        RUNTIME_BASE: ubuntu:22.04
+    image: neuroncite:cpu
+    container_name: neuroncite
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    volumes:
+      - neuroncite-data:/data/Documents/NeuronCite
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3030/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # --- CPU-only variant (ARM64, e.g., Raspberry Pi 5, AWS Graviton) ---
+  # Runs on ARM64 Linux hosts. GPU acceleration is not available for ARM64.
+  # Base image: ubuntu:22.04 (arm64 variant)
+  # ORT variant: onnxruntime-linux-aarch64 (CPU-only)
+  neuroncite-cpu-arm64:
+    profiles: ["cpu-arm64"]
+    platform: linux/arm64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        GPU: cpu
+        RUNTIME_BASE: ubuntu:22.04
+    image: neuroncite:cpu-arm64
+    container_name: neuroncite
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    volumes:
+      - neuroncite-data:/data/Documents/NeuronCite
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3030/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  neuroncite-data:
+    name: neuroncite-data

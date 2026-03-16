@@ -1,0 +1,27 @@
+# neuroncite-chunk: Text splitting strategies for extracted PDF content.
+# Implements page-based, word-window, token-window, and sentence-based chunking.
+# The token-window strategy receives a tokenizer instance from the caller to avoid
+# a compile-time dependency on neuroncite-embed.
+
+[package]
+name = "neuroncite-chunk"
+description = "Text chunking strategies for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+neuroncite-core = { workspace = true }
+thiserror = { workspace = true }
+unicode-segmentation = { workspace = true }
+unicode-normalization = { workspace = true }
+sha2 = { workspace = true }
+tokenizers = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = { workspace = true }
+
+[lints]
+workspace = true

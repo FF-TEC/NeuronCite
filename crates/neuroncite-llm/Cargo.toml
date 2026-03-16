@@ -1,0 +1,26 @@
+# Cargo manifest for the neuroncite-llm crate.
+#
+# Pure LLM abstraction layer with zero workspace-internal dependencies.
+# Provides the `LlmBackend` trait and concrete implementations (Ollama HTTP
+# client). The crate is a leaf dependency -- swapping the LLM backend
+# requires only adding a new struct that implements `LlmBackend` in this
+# crate; no other crates change.
+
+[package]
+name = "neuroncite-llm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+tokio        = { workspace = true }
+reqwest      = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+tracing      = { workspace = true }
+futures-util = { workspace = true }
+
+[lints]
+workspace = true

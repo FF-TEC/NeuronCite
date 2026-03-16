@@ -1,0 +1,91 @@
+# Claude Code local configuration
+.claude/
+
+# LaTeX intermediate build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ilg
+*.ind
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.xdy
+*.dvi
+*.ps
+
+# Latexmk
+*.latexmk
+
+# MiKTeX
+*.miktex
+
+# Rust build artifacts
+/target
+**/*.rs.bk
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Microsoft Office temporary lock files created while a document is open
+~$*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Runtime shared libraries (downloaded by build scripts, not committed)
+pdfium.dll
+libpdfium.so
+libpdfium.dylib
+*.tgz
+
+# Auto-downloaded Tesseract binaries and language data
+tesseract-ocr-w64-setup-*.exe
+*.AppImage
+*.traineddata
+
+# Runtime SQLite database artifacts (generated during indexing/serving)
+.neuroncite/
+*.db-shm
+*.db-wal
+
+# Node.js / Frontend build artifacts
+node_modules/
+crates/neuroncite-web/frontend/dist/
+
+# Environment
+.env
+

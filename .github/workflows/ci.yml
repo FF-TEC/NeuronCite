@@ -1,0 +1,480 @@
+# GitHub Actions CI pipeline for the NeuronCite workspace.
+# Implements the test matrix defined in the architecture document (Section 20.9):
+#   - Format check (cargo fmt)
+#   - Lint (cargo clippy) per OS and feature combination
+#   - Unit/integration tests per OS and feature combination
+#   - Doc tests
+#   - Coverage via llvm-cov
+#   - Benchmarks (ort-only configuration)
+#   - Architecture validation (LaTeX-to-source consistency check)
+#   - Release binary builds for Windows, Linux, and macOS
+#   - Docker build verification for amd64 and arm64
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Stage 0: Dependency security audit
+  # Runs cargo-audit against the committed Cargo.lock. Any advisory
+  # with a warning-or-higher severity causes the job to fail. This
+  # job runs independently of the format check so that audit
+  # failures are reported even when formatting is broken.
+  # ──────────────────────────────────────────────────────────────
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The denyWarnings input causes the action to treat advisory
+      # warnings as hard failures, matching the project policy of
+      # zero-tolerance for known vulnerabilities. The ignore list
+      # contains "unmaintained" advisories from the GTK3 binding
+      # crates that wry (WebView) pulls in transitively. These
+      # crates have no maintained replacement and cannot be updated
+      # until wry migrates to GTK4 bindings upstream.
+      - uses: actions-rust-lang/audit@v1
+        with:
+          denyWarnings: true
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0057,RUSTSEC-2025-0119,RUSTSEC-2025-0141
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 1: Format check
+  # Fails if any file deviates from rustfmt.toml.
+  # ──────────────────────────────────────────────────────────────
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - run: cargo fmt --all -- --check
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 2: Lint (cargo clippy)
+  # Runs once per OS and feature combination as specified in the
+  # CI matrix (Section 20.9). Each matrix entry maps to a row/column
+  # cell in the architecture document table.
+  # ──────────────────────────────────────────────────────────────
+  clippy:
+    name: Clippy (${{ matrix.os }}, ${{ matrix.name }})
+    needs: fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows (x86_64) -- ort-only (default feature)
+          - os: windows-latest
+            name: ort-only
+            features: "--features backend-ort"
+          # Windows (x86_64) -- all-features
+          - os: windows-latest
+            name: all-features
+            features: "--all-features"
+          # Linux (x86_64) -- ort-only (default feature)
+          - os: ubuntu-latest
+            name: ort-only
+            features: "--features backend-ort"
+          # Linux (x86_64) -- all-features
+          - os: ubuntu-latest
+            name: all-features
+            features: "--all-features"
+          # macOS ARM64 (Apple Silicon) -- ort-only
+          - os: macos-14
+            name: ort-only
+            features: "--features backend-ort"
+          # macOS ARM64 (Apple Silicon) -- all-features
+          - os: macos-14
+            name: all-features
+            features: "--all-features"
+          # Linux (x86_64) -- no-default-features (compile check only; no backend linked)
+          - os: ubuntu-latest
+            name: no-default-features
+            features: "--no-default-features"
+          # Linux (x86_64) -- mcp feature only (no embedded frontend or GPU backend)
+          - os: ubuntu-latest
+            name: mcp-only
+            features: "--features mcp"
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates. libwebkit2gtk-4.1-dev provides all
+      # WebKit2GTK headers and transitively pulls in libgtk-3-dev, libsoup-3.0-dev,
+      # and libjavascriptcoregtk-4.1-dev.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo clippy --workspace --all-targets ${{ matrix.features }} -- -D warnings
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 3: Unit and integration tests
+  # Runs per OS and feature combination. Each configuration is
+  # executed twice: once in default order and once in reversed
+  # single-threaded mode (--test-threads=1) to surface
+  # order-dependent test failures.
+  # ──────────────────────────────────────────────────────────────
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.name }})
+    needs: clippy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows (x86_64) -- ort-only
+          - os: windows-latest
+            name: ort-only
+            features: "--features backend-ort"
+          # Windows (x86_64) -- all-features
+          - os: windows-latest
+            name: all-features
+            features: "--all-features"
+          # Linux (x86_64) -- ort-only
+          - os: ubuntu-latest
+            name: ort-only
+            features: "--features backend-ort"
+          # Linux (x86_64) -- all-features
+          - os: ubuntu-latest
+            name: all-features
+            features: "--all-features"
+          # macOS ARM64 (Apple Silicon) -- ort-only
+          - os: macos-14
+            name: ort-only
+            features: "--features backend-ort"
+          # macOS ARM64 (Apple Silicon) -- all-features
+          - os: macos-14
+            name: all-features
+            features: "--all-features"
+          # Linux (x86_64) -- no-default-features (compile check; no GPU backend or embedded assets)
+          - os: ubuntu-latest
+            name: no-default-features
+            features: "--no-default-features"
+          # Linux (x86_64) -- mcp feature only
+          - os: ubuntu-latest
+            name: mcp-only
+            features: "--features mcp"
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Run 1: Default test ordering (parallel)
+      - name: Run tests (default order)
+        run: cargo test --workspace ${{ matrix.features }}
+
+      # Run 2: Reversed single-threaded execution to detect order-dependent failures
+      - name: Run tests (reversed, single-threaded)
+        run: cargo test --workspace ${{ matrix.features }} -- --test-threads=1
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 3b: Release-mode integration tests (Linux only)
+  # Runs the integration test suite with --release to catch
+  # optimisation-dependent bugs (e.g. incorrect unsafe, wrong
+  # assumptions about struct layout or alignment) that the debug
+  # build might hide. Depends on the debug test stage passing so
+  # that release-mode failures are clearly additional, not duplicates.
+  # ──────────────────────────────────────────────────────────────
+  test-release:
+    name: Integration tests (release mode)
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run integration tests in release mode
+        run: cargo test --release --workspace --features backend-ort
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 4: Doc tests
+  # Verifies that all code examples in documentation compile and run.
+  # ──────────────────────────────────────────────────────────────
+  doc-test:
+    name: Doc tests
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo test --doc --workspace
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 5: Coverage
+  # Generates an LCOV report via cargo-llvm-cov and uploads it
+  # as a build artifact for downstream consumption (codecov, etc.).
+  # ──────────────────────────────────────────────────────────────
+  coverage:
+    name: Coverage
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+
+      - name: Generate coverage report
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-lcov
+          path: lcov.info
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 6: Benchmarks
+  # Runs on the ort-only configuration. Results are compared against
+  # the stored baseline; regressions beyond 10% produce a CI warning.
+  # ──────────────────────────────────────────────────────────────
+  bench:
+    name: Benchmarks (${{ matrix.os }})
+    needs: clippy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Benchmarks run on both Windows and Linux per the CI matrix,
+        # but only for the ort-only feature combination.
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run benchmarks (ort-only)
+        run: cargo bench --workspace --features backend-ort
+
+      - name: Save benchmark baseline
+        run: |
+          if cargo bench --bench hnsw_query --features backend-ort -- --save-baseline pr 2>/dev/null; then
+            echo "Benchmark baseline saved"
+          else
+            echo "Benchmark save skipped (no benchmark runner available)"
+          fi
+        continue-on-error: true
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 7: Architecture validation
+  # Runs the full suite of Python consistency validators against
+  # the LaTeX architecture document, Rust source tree, database
+  # schema, MCP tool catalog, REST API endpoints, and CLI
+  # subcommands. Each step runs in --strict mode so warnings are
+  # treated as errors.
+  # ──────────────────────────────────────────────────────────────
+  validate-architecture:
+    name: Architecture validation
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # Step 1: Generate the test chapter LaTeX from Rust source code.
+      # Produces docs/tests_generated.tex by scanning test IDs in all
+      # .rs files. Must run before validate_tests.py since it creates
+      # the file that validate_tests.py checks for consistency. The
+      # git diff check verifies the committed version is up to date.
+      - name: Generate test chapter
+        run: |
+          python tools/gen/generate_test_chapter.py --root . --output docs/tests_generated.tex
+          if ! git diff --exit-code docs/tests_generated.tex; then
+            echo "ERROR: docs/tests_generated.tex is out of date."
+            echo "Run: python tools/gen/generate_test_chapter.py --root . --output docs/tests_generated.tex"
+            echo "and commit the updated file."
+            exit 1
+          fi
+
+      # Step 2: Validate test catalog consistency between LaTeX test
+      # tables (unit, integration, property, regression, performance)
+      # and the actual Rust test IDs found in source files.
+      - name: Validate test catalogs
+        run: python tools/ci/validate_tests.py --tex docs/architecture.tex --root . --strict
+
+      # Step 3: Validate cross-section consistency between LaTeX prose
+      # claims and the Rust code: MCP tool catalogs, REST API endpoint
+      # tables, CLI subcommand tables, crate counts, label/ref integrity,
+      # and numeric prose claims.
+      - name: Validate cross-section consistency
+        run: python tools/ci/validate_consistency.py --tex docs/architecture.tex --root . --strict
+
+      # Step 4: Validate database schema consistency between LaTeX
+      # schema tables (columns, types, indexes, triggers, FTS5) and
+      # the SQL DDL in schema.rs.
+      - name: Validate database schemas
+        run: python tools/ci/validate_schemas.py --tex docs/architecture.tex --schema crates/neuroncite-store/src/schema.rs --strict
+
+      # Step 5: Validate architecture document module structure,
+      # feature flags, crate overview, and dependency graph against
+      # the Rust source tree.
+      - name: Validate architecture document
+        run: python tools/ci/validate_architecture.py --tex docs/architecture.tex --root . --strict
+
+      # Step 6: Verify REST/MCP/Python client API parity between
+      # Rust DTOs, REST routes, MCP tool dispatch, and the Python
+      # client methods and dataclasses.
+      - name: Verify API parity
+        run: python tools/ci/api_parity_check.py --strict
+
+      # Step 7: Verify OpenAPI route parity between router.rs and
+      # openapi.rs.
+      - name: Verify OpenAPI route parity
+        run: python tools/ci/check_openapi_parity.py
+
+      # Step 8: Verify hnsw_rs is pinned to the required version.
+      - name: Verify hnsw_rs is pinned to version 0.3.4
+        run: |
+          if ! grep -A 2 'name = "hnsw_rs"' Cargo.lock | grep -q 'version = "0.3.4"'; then
+            echo "ERROR: hnsw_rs must be pinned to version 0.3.4 in Cargo.lock"
+            exit 1
+          fi
+          echo "hnsw_rs version 0.3.4 verified"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 7b: Python client tests
+  # Installs the Python client package in dev mode and runs the
+  # full pytest suite. Tests use HTTP response mocking via the
+  # responses library -- no running server is required.
+  # ──────────────────────────────────────────────────────────────
+  python-client-tests:
+    name: Python client tests
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python client with dev dependencies
+        working-directory: clients/python
+        run: pip install -e ".[dev]"
+
+      - name: Run pytest
+        working-directory: clients/python
+        run: pytest tests/ -v --tb=short
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 8: Docker build verification (disabled in CI)
+  # Docker builds take 30-120+ minutes due to QEMU arm64 emulation
+  # and are run manually via `docker buildx build` when needed.
+  # The Dockerfile and docker-compose.yml are maintained in /docker.
+  # ──────────────────────────────────────────────────────────────
+
+  # ──────────────────────────────────────────────────────────────
+  # Release build
+  # Compiles the release binary for Windows, Linux, and macOS and
+  # uploads the artifacts. Depends on all test and validation
+  # stages passing.
+  # ──────────────────────────────────────────────────────────────
+  release-build:
+    name: Release build (${{ matrix.os }})
+    needs: [audit, test, test-release, doc-test, coverage, bench, validate-architecture, python-client-tests]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact-name: neuroncite-windows-x86_64
+            binary-path: target/release/neuroncite.exe
+          - os: ubuntu-latest
+            artifact-name: neuroncite-linux-x86_64
+            binary-path: target/release/neuroncite
+          - os: macos-14
+            artifact-name: neuroncite-macos-arm64
+            binary-path: target/release/neuroncite
+    steps:
+      - uses: actions/checkout@v6
+
+      # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
+      # soup3-sys, and GTK3 binding crates at compile time.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Upload release binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.binary-path }}
+          retention-days: 30

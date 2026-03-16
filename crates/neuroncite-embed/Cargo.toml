@@ -1,0 +1,47 @@
+# neuroncite-embed: Embedding backend abstraction and ONNX Runtime implementation.
+# Also implements the Reranker trait for cross-encoder models and manages the
+# platform-specific model cache (download, checksum verification, offline resolution).
+#
+# The backend-ort feature (default) compiles the ONNX Runtime inference backend
+# with CUDA execution provider support.
+
+[package]
+name = "neuroncite-embed"
+description = "Embedding backend abstraction and ML framework integrations for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = ["backend-ort"]
+# ONNX Runtime backend: uses the ort crate for inference with CUDA execution
+# provider support and ndarray for tensor manipulation.
+backend-ort = ["dep:ort", "dep:ndarray", "dep:half"]
+
+[dependencies]
+neuroncite-core = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokenizers = { workspace = true }
+sha2 = { workspace = true }
+
+# HTTP client for downloading model files from HuggingFace CDN on first use.
+# The blocking feature is required because model downloads run in a dedicated
+# thread outside the tokio runtime context.
+reqwest = { workspace = true }
+
+# Backend-specific optional dependencies, activated by the corresponding feature flag
+
+# ONNX Runtime backend
+ort = { workspace = true, optional = true }
+ndarray = { workspace = true, optional = true }
+# IEEE 754 half-precision (f16) for extracting f16 output tensors from ONNX
+# models that produce half-precision embeddings (e.g. Qwen3-Embedding-0.6B).
+half = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

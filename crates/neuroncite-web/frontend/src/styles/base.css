@@ -1,0 +1,113 @@
+/* ================================================================
+   BASE STYLES
+   CSS reset, Inter font loading, scrollbar styling, and body defaults.
+   ================================================================ */
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 300 900;
+    font-display: swap;
+    src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 300 900;
+    font-display: swap;
+    src: url('/fonts/inter-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    height: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    line-height: 1.5;
+    overflow: hidden;
+    height: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    height: 100%;
+}
+
+/* Custom scrollbar styling matching the dark neon theme.
+   Colors reference the --color-scrollbar-thumb and --color-scrollbar-thumb-hover
+   tokens from tokens.css for consistency. */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 15, 26, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-thumb-hover);
+}
+
+/* Firefox scrollbar styling (non-WebKit browsers).
+   Uses the same purple accent tones as the WebKit scrollbar above
+   for consistent appearance across Chrome, Edge, and Firefox. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) rgba(10, 15, 26, 0.5);
+}
+
+/* Skip navigation link for keyboard/screen-reader users. Hidden off-screen
+   by default, becomes visible and focused when the user tabs into it.
+   Placed as the first focusable element in the DOM so keyboard users can
+   bypass the topbar tab navigation and jump directly to tab content. */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    z-index: 9999;
+    background: var(--color-bg-primary);
+    color: var(--color-accent-cyan);
+    padding: 8px 16px;
+    font-size: 13px;
+    text-decoration: none;
+    border: 1px solid var(--color-accent-cyan);
+    border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Focus-visible outlines for accessibility */
+:focus-visible {
+    outline: 2px solid var(--color-accent-cyan);
+    outline-offset: 2px;
+}
+
+/* Selection color matching the theme */
+::selection {
+    background: rgba(168, 85, 247, 0.3);
+    color: var(--color-text-primary);
+}

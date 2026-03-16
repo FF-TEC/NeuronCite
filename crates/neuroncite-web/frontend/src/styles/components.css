@@ -1,0 +1,1507 @@
+/* ================================================================
+   COMPONENT STYLES
+   Styles for reusable UI components: glass cards, buttons, inputs,
+   badges, progress bars, and modals.
+   ================================================================ */
+
+/* ---- Glass Card ---- */
+.glass-card {
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.glass-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--color-border-hover);
+}
+
+/* ---- Buttons ---- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-glass-bg);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--color-bg-card-hover);
+    border-color: var(--color-border-hover);
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-accent-purple-deep), var(--color-accent-purple));
+    border-color: var(--color-accent-purple);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    box-shadow: var(--glow-purple);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+/* Active state for toggle buttons (e.g. Group by document). Purple background
+   with a subtle glow to indicate the toggle is currently on. */
+.btn-sm.active {
+    background: linear-gradient(135deg, var(--color-accent-purple-deep), var(--color-accent-purple));
+    border-color: var(--color-accent-purple);
+    color: white;
+    box-shadow: var(--glow-purple);
+}
+
+/* ---- Text Input ---- */
+.input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-input-focus);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.1);
+}
+
+.input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* ---- Select / Dropdown ---- */
+.select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a0b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+}
+
+.select:focus {
+    outline: none;
+    border-color: var(--color-input-focus);
+}
+
+/* ---- Status Badge ---- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.badge-cyan {
+    background: var(--color-accent-cyan-dim);
+    color: var(--color-accent-cyan);
+}
+
+.badge-purple {
+    background: var(--color-accent-purple-dim);
+    color: var(--color-accent-purple);
+}
+
+.badge-amber {
+    background: var(--color-accent-amber-dim);
+    color: var(--color-accent-amber);
+}
+
+.badge-gray {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--color-text-muted);
+}
+
+/* ---- Progress Bar ---- */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--color-bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent-purple), var(--color-accent-cyan));
+    border-radius: 2px;
+    transition: width var(--transition-base);
+    box-shadow: var(--glow-cyan);
+}
+
+/* ---- Checkbox (toggle chip style) ---- */
+.toggle-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 100px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.toggle-chip.active {
+    background: var(--color-accent-purple-dim);
+    border-color: var(--color-accent-purple);
+    color: var(--color-accent-purple-light);
+}
+
+/* ---- Modal / Floating Panel ---- */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-panel {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card-hover);
+    max-width: 900px;
+    max-height: 80vh;
+    width: 90%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-glass-border);
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--color-close-btn-hover);
+    color: var(--color-text-primary);
+}
+
+.modal-close:active {
+    background: var(--color-close-btn-active);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* ---- Topbar Tab Navigation ----
+   The flex: 1 allows the internal .topbar-tab-spacer element to push
+   utility tabs (Settings, Models) to the right edge of the topbar.
+   The container itself remains part of the drag region so the empty
+   space between and around tabs is draggable for moving the window.
+   Only the individual tab buttons are excluded via no-drag. */
+.topbar-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Individual tab buttons are excluded from the drag region so click
+   events register as button presses instead of window drag operations. */
+.topbar-tab {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 16px;
+    border: none;
+    background: none;
+    color: var(--color-tab-inactive);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    border-bottom: 2px solid transparent;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
+
+.topbar-tab:hover {
+    color: var(--color-tab-hover);
+}
+
+.topbar-tab.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent-purple);
+}
+
+/* ---- Topbar Tab Tooltips ----
+   Portal-rendered tooltip panel that appears 8px below a hovered tab
+   button after a 400ms delay (handled in Topbar.tsx). Uses position:fixed
+   so the panel is not affected by topbar backdrop-filter or overflow.
+   Styling mirrors .tip-content for visual consistency with the inline
+   help tooltips used throughout the application. The arrow pseudo-element
+   points upward toward the originating tab button. */
+.topbar-tooltip {
+    position: fixed;
+    width: 280px;
+    padding: 10px 12px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-left: 2px solid var(--color-accent-purple);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card-hover);
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+    z-index: 500;
+    pointer-events: none;
+    white-space: normal;
+}
+
+/* Arrow pointing up from the tooltip panel toward the tab button */
+.topbar-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 14px;
+    border: 5px solid transparent;
+    border-bottom-color: var(--color-accent-purple);
+}
+
+/* ---- Window Control Buttons ----
+   Minimize, maximize/restore, and close buttons for the frameless native
+   window. Positioned at the far right edge of the topbar. Excluded from the
+   drag region so click events reach the button handlers. The close button
+   has a red hover background matching Windows platform conventions. */
+.window-controls {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    margin-left: 8px;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
+
+.window-control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.window-control-btn:hover {
+    background: var(--color-close-btn-hover);
+    color: var(--color-text-primary);
+}
+
+.window-control-btn:active {
+    background: var(--color-close-btn-active);
+}
+
+/* Close button uses red background on hover to match Windows platform
+   convention for the close button. The red color signals a destructive
+   action to the user. */
+.window-control-close:hover {
+    background: #c42b1c;
+    color: #ffffff;
+}
+
+.window-control-close:active {
+    background: #b22a1a;
+    color: #ffffff;
+}
+
+/* ---- Search Bar ---- */
+.search-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 42px;
+    transition: border-color var(--transition-fast);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-accent-purple);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+/* Wrapper for the search textarea that renders a visible drag-grip indicator
+   at the bottom center. The three horizontal lines signal that the textarea
+   can be vertically resized by dragging the bottom edge. The grip lines are
+   purely decorative (pointer-events: none) and do not interfere with the
+   native browser resize behavior. */
+.search-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.search-input-wrapper .resize-grip {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    pointer-events: none;
+    opacity: 0.3;
+    transition: opacity var(--transition-fast);
+}
+
+.search-input-wrapper:hover .resize-grip {
+    opacity: 0.6;
+}
+
+.search-input-wrapper .resize-grip span {
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: var(--color-text-muted);
+    border-radius: 1px;
+}
+
+.search-toggles {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* ---- Result Card ---- */
+.result-card {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-glass-border);
+    transition: background var(--transition-fast);
+}
+
+.result-card:hover {
+    background: rgba(168, 85, 247, 0.03);
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.result-rank {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-accent-purple);
+    min-width: 24px;
+}
+
+.result-score {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-accent-cyan);
+    font-variant-numeric: tabular-nums;
+}
+
+.result-source {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-left: auto;
+}
+
+.result-text {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.result-text.expanded {
+    -webkit-line-clamp: unset;
+}
+
+.result-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* ---- Label ---- */
+.label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+/* ---- Tooltip ----
+   Inline help icons next to labels and section titles. A small circled "i"
+   icon triggers a floating panel on hover. Uses position:fixed so the panel
+   is not clipped by parent containers with overflow:auto/hidden. The Tip
+   component in Tip.tsx computes top/left via getBoundingClientRect
+   on mouseenter and passes them as inline styles. */
+
+.tip-trigger {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.tip-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--color-text-muted);
+    color: var(--color-text-muted);
+    font-size: 9px;
+    font-weight: 600;
+    font-style: italic;
+    cursor: help;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.tip-trigger:hover .tip-icon {
+    border-color: var(--color-accent-purple);
+    color: var(--color-accent-purple);
+}
+
+.tip-content {
+    position: fixed;
+    width: 280px;
+    padding: 10px 12px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-left: 2px solid var(--color-accent-purple);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card-hover);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+    z-index: 500;
+    pointer-events: none;
+    white-space: normal;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Arrow pointing up from the tooltip panel toward the trigger icon.
+   Default position: tooltip below the icon, arrow at top edge. */
+.tip-content::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 10px;
+    border: 5px solid transparent;
+    border-bottom-color: var(--color-accent-purple);
+}
+
+/* Flipped variant: tooltip above the icon, arrow at bottom edge pointing down. */
+.tip-content.tip-above::before {
+    bottom: auto;
+    top: 100%;
+    border-bottom-color: transparent;
+    border-top-color: var(--color-accent-purple);
+}
+
+/* ---- Inline row ---- */
+.row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ---- Dropdown Menu (Tools dropdown in Topbar) ---- */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 160px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card-hover);
+    z-index: 300;
+    padding: 4px 0;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+    background: rgba(168, 85, 247, 0.1);
+    color: var(--color-text-primary);
+}
+
+/* ---- Modal (used by App.tsx for floating panels) ---- */
+.modal {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card-hover);
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Browse Entry (file browser directory entries) ---- */
+.browse-entry:hover {
+    background: rgba(34, 211, 238, 0.08);
+}
+
+/* ---- Result Card sub-parts ---- */
+.result-card-header {
+    margin-bottom: 6px;
+}
+
+.result-card-content {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    padding: 4px 0;
+}
+
+.result-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* ---- StatusBar Progress Overlay ---- */
+.statusbar-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.15));
+    transition: width 300ms ease;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- StatusBar Log Line ---- */
+
+/* Clickable last-log-message area at the right edge of the status bar.
+   Truncates long messages with ellipsis to fit within the available space.
+   Sits above the progress gradient overlay via z-index. */
+.statusbar-log-line {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    max-width: 500px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    transition: background var(--transition-fast);
+    z-index: 1;
+}
+
+.statusbar-log-line:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Truncated log message text within the status bar. Monospace font at the
+   same size as the LogPanel for visual consistency. */
+.statusbar-log-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* ---- Log Popup (anchored above the StatusBar) ---- */
+
+/* Semi-transparent backdrop covering the viewport above the status bar.
+   Clicking the backdrop closes the popup. */
+.log-popup-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--statusbar-height);
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 150;
+}
+
+/* Glass-morphism log viewer panel anchored directly above the status bar.
+   Uses fixed positioning to escape the footer element's layout context.
+   Height is 40% of the viewport, clamped between 200px and 500px. */
+.log-popup {
+    position: fixed;
+    bottom: var(--statusbar-height);
+    left: 0;
+    right: 0;
+    height: 40vh;
+    max-height: 500px;
+    min-height: 200px;
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-glass-border);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    z-index: 160;
+    animation: log-popup-slide-up 0.2s ease-out;
+}
+
+/* Slide-up entrance animation for the log popup */
+@keyframes log-popup-slide-up {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header bar of the log popup with title, message count, and action buttons */
+.log-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-glass-border);
+    flex-shrink: 0;
+}
+
+/* Title text in the log popup header */
+.log-popup-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Scrollable log message container inside the popup. Uses the same monospace
+   font and sizing as the LogPanel component for visual consistency. */
+.log-popup-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+/* Individual log line within the popup. Preserves whitespace formatting
+   and allows word breaking for long unbroken strings. */
+.log-popup-line {
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 1px 0;
+}
+
+/* ---- Model Table ----
+   Both embedding and reranker catalogs share this table class.
+   table-layout: fixed forces column widths to follow the <colgroup>
+   definitions so both tables render with identical column widths
+   regardless of cell content length. */
+.model-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.model-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-glass-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.model-table td {
+    padding: 8px 10px;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.model-table tr:hover td {
+    background: rgba(168, 85, 247, 0.03);
+}
+
+/* ================================================================
+   WELCOME DIALOG
+   First-run setup dialog shown once on fresh installation.
+   Uses a full-screen fixed backdrop so the user cannot interact
+   with the application until they make a choice.
+   ================================================================ */
+
+/* Full-screen fixed overlay. z-index 9999 places it above all panels. */
+.welcome-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(10, 15, 26, 0.88);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+/* Centered dialog card with glass-morphism surface. */
+.welcome-dialog {
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-border-hover);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 80px rgba(168, 85, 247, 0.08);
+    backdrop-filter: blur(16px);
+    width: 100%;
+    max-width: 660px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header bar with title and purple bottom border. */
+.welcome-header {
+    padding: 28px 28px 22px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Centered variant used for the first-run dialog. */
+.welcome-header--centered {
+    text-align: center;
+}
+
+.welcome-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+    margin: 4px 0 0;
+}
+
+/* "Cite" portion of the title uses the same purple-to-cyan gradient as the
+   topbar logo and the released website branding. */
+.welcome-title span {
+    background: linear-gradient(135deg, var(--color-accent-purple) 30%, var(--color-accent-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-subtitle {
+    font-size: 12px;
+    color: var(--color-accent-purple);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Bold tagline shown beneath the main title. */
+.welcome-tagline {
+    font-size: 15px;
+    color: var(--color-text-muted);
+    margin: 6px 0 0;
+    font-weight: 700;
+}
+
+/* Main scrollable body area. */
+.welcome-body {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Section grouping with optional heading. */
+.welcome-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.welcome-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Tool description paragraph. */
+.welcome-description {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Privacy statement box. Subtle cyan-tinted border to signal trust without
+   visual dominance. The lock icon and text sit side by side. */
+.welcome-privacy-box {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: rgba(34, 211, 238, 0.04);
+    border: 1px solid rgba(34, 211, 238, 0.18);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.welcome-privacy-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+    line-height: 1.7;
+}
+
+.welcome-privacy-text {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Container for the live dependency probe rows. */
+.welcome-probe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Single probe row: dot + name/purpose column + right-aligned action. */
+.welcome-probe-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    min-height: 46px;
+}
+
+/* 8x8 status indicator dot. */
+.welcome-probe-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Cyan glow -- dependency is present on the system. */
+.welcome-probe-dot--ok {
+    background: var(--color-accent-cyan);
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.5);
+}
+
+/* Magenta -- dependency is missing. */
+.welcome-probe-dot--missing {
+    background: var(--color-accent-magenta);
+}
+
+/* Purple -- informational row (embedding model, status unknown). */
+.welcome-probe-dot--info {
+    background: var(--color-accent-purple);
+}
+
+/* Name and purpose text column. */
+.welcome-probe-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.welcome-probe-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.welcome-probe-purpose {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Right-side action area (status text or button). */
+.welcome-probe-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* "Available" label -- dependency found on the system. */
+.welcome-probe-status-ok {
+    font-size: 11px;
+    color: var(--color-accent-cyan);
+    font-weight: 500;
+}
+
+/* "Optional" label -- dependency absent but not required. */
+.welcome-probe-status-optional {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* "Downloaded during setup" -- informational status for non-probed entries. */
+.welcome-probe-status-pending {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* Shown while the initial probe fetch is in progress. */
+.welcome-probe-loading {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 14px 0;
+    font-style: italic;
+}
+
+/* List of dependencies that will be downloaded. */
+.welcome-dep-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.welcome-dep-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+/* Cyan bullet for each downloadable dependency. */
+.welcome-dep-item::before {
+    content: "";
+    flex-shrink: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent-cyan);
+    margin-top: 1px;
+    align-self: center;
+}
+
+/* Gray bullet for the manual-only dependency (poppler). */
+.welcome-dep-item--manual::before {
+    background: var(--color-text-muted);
+}
+
+.welcome-dep-name {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--color-accent-cyan);
+    background: var(--color-accent-cyan-dim);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.welcome-dep-item--manual .welcome-dep-name {
+    color: var(--color-text-muted);
+    background: transparent;
+}
+
+.welcome-dep-desc {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+/* Storage path display box. */
+.welcome-path-box {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    word-break: break-all;
+}
+
+/* Step-by-step progress list shown while auto-install is running. */
+.welcome-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.welcome-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* Status icon for each step -- 18x18 box. */
+.welcome-step-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.welcome-step--pending .welcome-step-icon {
+    border: 1.5px solid var(--color-text-muted);
+    color: transparent;
+}
+
+/* Spinning ring for loading state. */
+.welcome-step--loading .welcome-step-icon {
+    border: 2px solid transparent;
+    border-top-color: var(--color-accent-purple);
+    border-right-color: var(--color-accent-purple);
+    animation: welcome-spin 0.7s linear infinite;
+}
+
+.welcome-step--done .welcome-step-icon {
+    background: var(--color-accent-cyan);
+    color: #0a0f1a;
+}
+
+.welcome-step--done .welcome-step-icon::after {
+    content: "\2713";
+}
+
+.welcome-step--error .welcome-step-icon {
+    background: var(--color-accent-magenta);
+    color: white;
+}
+
+.welcome-step--error .welcome-step-icon::after {
+    content: "!";
+}
+
+.welcome-step--loading,
+.welcome-step--done {
+    color: var(--color-text-primary);
+}
+
+.welcome-step--error {
+    color: var(--color-accent-magenta);
+}
+
+.welcome-step-label {
+    flex: 1;
+}
+
+.welcome-step-error-detail {
+    font-size: 11px;
+    color: var(--color-accent-magenta);
+    margin-top: 2px;
+}
+
+@keyframes welcome-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Footer with action buttons. */
+.welcome-footer {
+    padding: 16px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Large primary call-to-action button. */
+.welcome-btn-primary {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--color-accent-purple-deep), var(--color-accent-purple));
+    border: 1px solid var(--color-accent-purple);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: box-shadow var(--transition-fast), opacity var(--transition-fast);
+    letter-spacing: 0.01em;
+}
+
+.welcome-btn-primary:hover:not(:disabled) {
+    box-shadow: var(--glow-purple);
+}
+
+.welcome-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Secondary ghost button for manual setup. */
+.welcome-btn-secondary {
+    width: 100%;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.welcome-btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-border-hover);
+    color: var(--color-text-secondary);
+}
+
+.welcome-btn-secondary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Inline error message shown below the buttons on catastrophic failure. */
+.welcome-error-banner {
+    font-size: 12px;
+    color: var(--color-accent-magenta);
+    text-align: center;
+    padding: 6px 0 0;
+}
+
+/* Directory tree rendered inside the path box. Monospace lines with
+   branch characters showing subdirectory purpose below the root path. */
+.welcome-dir-tree {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.welcome-dir-row {
+    display: flex;
+    align-items: baseline;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.welcome-dir-branch {
+    color: var(--color-text-muted);
+    white-space: pre;
+}
+
+.welcome-dir-name {
+    color: var(--color-accent-cyan);
+}
+
+.welcome-dir-desc {
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+
+/* Inline link button styled as a hyperlink. Used for external URLs that
+   must be opened via IPC because the wry WebView blocks direct navigation. */
+.welcome-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-size: inherit;
+    color: var(--color-accent-cyan);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.welcome-link-btn:hover {
+    opacity: 0.8;
+}
+
+/* ---- Citation Info Toast ----
+   Brief auto-dismiss notification rendered below the .bib input row
+   when the system auto-detects a bibliography file in the same directory
+   as the selected .tex file. Cyan left border signals informational
+   rather than error state. Slides in with a fade animation. */
+.citation-info-toast {
+    font-size: 11px;
+    color: var(--color-accent-cyan);
+    background: rgba(34, 211, 238, 0.06);
+    border: 1px solid rgba(34, 211, 238, 0.18);
+    border-left: 2px solid var(--color-accent-cyan);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    animation: citation-toast-in 0.3s ease-out;
+}
+
+@keyframes citation-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ================================================================
+   ERROR BOUNDARY
+   Catch-all error display rendered when a tab component throws
+   during rendering. Shows the error message and a retry button
+   that re-renders the component tree. Centered in the app body
+   with a glass-morphism card matching the application theme.
+   ================================================================ */
+
+.error-boundary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 32px;
+    text-align: center;
+    height: 100%;
+}
+
+.error-boundary h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-accent-magenta);
+    margin: 0;
+}
+
+.error-boundary pre {
+    max-width: 600px;
+    padding: 12px 16px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-accent-magenta);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.error-boundary button {
+    padding: 8px 24px;
+    background: linear-gradient(135deg, var(--color-accent-purple-deep), var(--color-accent-purple));
+    border: 1px solid var(--color-accent-purple);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: box-shadow var(--transition-fast);
+}
+
+.error-boundary button:hover {
+    box-shadow: var(--glow-purple);
+}
+
+/* ================================================================
+   TAB LOADING INDICATOR
+   Centered placeholder displayed inside the app body while:
+   1. The initial config/health fetch is in progress (initializing state)
+   2. A lazy-loaded tab chunk is being fetched (Suspense fallback)
+   Uses a spinning ring animation matching the application's purple accent.
+   ================================================================ */
+
+.tab-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 100%;
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+/* Spinning ring used as a visual loading indicator. 32x32 circle with
+   a purple arc that rotates continuously. */
+.tab-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-accent-purple);
+    border-radius: 50%;
+    animation: tab-loading-spin 0.8s linear infinite;
+}
+
+@keyframes tab-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Focus indicator for keyboard-accessible interactive elements. */
+.clickable-focus:focus-visible {
+    outline: 2px solid var(--color-accent, #7c3aed);
+    outline-offset: 2px;
+}
+
+/* Screen reader only utility. Visually hidden but accessible to assistive tech. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

@@ -1,0 +1,57 @@
+/* ================================================================
+   ANIMATIONS
+   Animated gradient mesh background and transition effects
+   adopted from the released website design.
+   ================================================================ */
+
+.gradient-mesh {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0f1a 0%, #0e1425 40%, #0a0f1a 100%);
+    animation: meshShift 20s ease-in-out infinite alternate;
+}
+
+@keyframes meshShift {
+    0% { background-position: 0% 0%, 100% 100%, 50% 50%, 0% 0%; }
+    50% { background-position: 30% 10%, 70% 90%, 40% 60%, 0% 0%; }
+    100% { background-position: 10% 20%, 90% 70%, 60% 40%, 0% 0%; }
+}
+
+/* Pulsing glow effect for active citation status badges (searching,
+   evaluating, reasoning). Scales opacity between 60% and 100% to
+   indicate ongoing work without being too distracting. */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Reusable CSS class for the pulse animation. Components should use
+   class="pulse-animation" instead of inline style animation: pulse ...
+   to benefit from the prefers-reduced-motion media query below. */
+.pulse-animation {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Reduced motion: disable all animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .gradient-mesh {
+        animation: none;
+    }
+
+    .pulse-animation {
+        animation: none;
+    }
+
+    *[style*="animation: pulse"] {
+        animation: none !important;
+    }
+}

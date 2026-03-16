@@ -1,0 +1,247 @@
+# Pre-commit hook configuration for the NeuronCite workspace.
+# Mirrors the .git/hooks/pre-commit bash script so that contributors who
+# use the pre-commit Python framework get the same checks as the bash hook.
+#
+# The bash hook (.git/hooks/pre-commit) is the authoritative source.
+# This file serves as a declarative reference for pre-commit framework users.
+#
+# The bash hook groups these checks into 6 phases and runs independent
+# checks within a phase in parallel (background subshells with output
+# capture). The pre-commit Python framework runs hooks sequentially in
+# the order listed below, so no parallelism is available through this
+# YAML configuration. For maximum speed, use the bash hook directly.
+#
+# Install: pre-commit install
+# Run all hooks manually: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      # ================================================================
+      # Phase 1 (parallel in bash hook): fast checks, no compilation
+      # ================================================================
+
+      # 1a: LaTeX lint
+      # Compiles each .tex file in nonstop/draft mode and checks for
+      # fatal LaTeX errors. Overfull/underfull boxes produce warnings
+      # but do not block the commit.
+      - id: latex-lint
+        name: "1a: latex lint"
+        entry: bash -c 'cd docs && for f in *.tex; do grep -q "\\\\documentclass" "$f" || continue; pdflatex -interaction=nonstopmode -draftmode "${f%.tex}" > /dev/null 2>&1; if grep -q "^!" "${f%.tex}.log" 2>/dev/null; then echo "FATAL errors in $f"; grep "^!" "${f%.tex}.log"; exit 1; fi; done'
+        language: system
+        files: '\.tex$'
+        pass_filenames: false
+
+      # 1b: Format check
+      # Verifies that all Rust source files conform to rustfmt.toml.
+      - id: cargo-fmt
+        name: "1b: cargo fmt check"
+        entry: cargo fmt --all -- --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # 1c: Dependency audit (requires cargo-deny)
+      # Checks license compliance, RustSec advisories, banned/duplicate
+      # crates, and source provenance against deny.toml.
+      - id: cargo-deny
+        name: "1c: cargo deny"
+        entry: cargo deny check
+        language: system
+        files: '(Cargo\.toml|Cargo\.lock|deny\.toml)$'
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 2a (sequential in bash hook): test chapter generation
+      # ================================================================
+
+      # 2a-pre: Generate test chapter
+      # Scans all Rust test doc comments (/// T-XXX-NNN:) and produces
+      # docs/tests_generated.tex. Must run before LaTeX build (latexmk
+      # needs the file) and before test/consistency validators.
+      - id: generate-test-chapter
+        name: "2a-pre: generate test chapter"
+        entry: python tools/gen/generate_test_chapter.py --root . --output docs/tests_generated.tex
+        language: system
+        files: '(\.rs|generate_test_chapter\.py)$'
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 2b (parallel in bash hook): independent I/O
+      # ================================================================
+
+      # 2b-1: LaTeX build + clean + stage
+      # Produces the final PDF via latexmk (multiple passes for TOC,
+      # references, etc.), removes intermediate artifacts, and stages
+      # built PDFs. A build failure blocks the commit.
+      - id: latex-build
+        name: "2b-1: latex build"
+        entry: bash -c 'cd docs && for f in *.tex; do grep -q "\\\\documentclass" "$f" || continue; latexmk -pdf -interaction=nonstopmode -halt-on-error "${f%.tex}" || exit 1; git add "${f%.tex}.pdf" 2>/dev/null; done'
+        language: system
+        files: '\.tex$'
+        pass_filenames: false
+
+      # 2b-1 (continued): LaTeX clean
+      # Removes all intermediate build artifacts while keeping .tex and .pdf.
+      - id: latex-clean
+        name: "2b-1: latex clean"
+        entry: bash -c 'cd docs && rm -f *.aux *.log *.out *.toc *.lof *.lot *.fls *.fdb_latexmk *.synctex.gz *.bbl *.blg *.bcf *.run.xml *.nav *.snm *.vrb *.idx *.ilg *.ind *.dvi *.ps 2>/dev/null; true'
+        language: system
+        files: '\.tex$'
+        pass_filenames: false
+
+      # 2b-2: Architecture validation
+      # Checks bidirectional consistency between the LaTeX architecture
+      # document and the Rust source tree (module structure, feature flags,
+      # visibility, dependency graph).
+      - id: validate-architecture
+        name: "2b-2: validate architecture"
+        entry: python tools/ci/validate_architecture.py --tex docs/architecture.tex --root . --strict
+        language: system
+        files: '(\.rs|\.toml|architecture\.tex)$'
+        pass_filenames: false
+
+      # 2b-3: Schema validation
+      # Checks bidirectional consistency between the LaTeX schema
+      # documentation and the SQL DDL in schema.rs.
+      - id: validate-schemas
+        name: "2b-3: validate schemas"
+        entry: python tools/ci/validate_schemas.py --tex docs/architecture.tex --schema crates/neuroncite-store/src/schema.rs --strict
+        language: system
+        files: '(schema\.rs|architecture\.tex)$'
+        pass_filenames: false
+
+      # 2b-4: Test catalog validation
+      # Verifies that LaTeX test catalog IDs match Rust source test IDs,
+      # summary counts match catalog entries, and no duplicate IDs exist.
+      - id: validate-tests
+        name: "2b-4: validate test catalogs"
+        entry: python tools/ci/validate_tests.py --tex docs/architecture.tex --root . --strict
+        language: system
+        files: '(\.rs|architecture\.tex|tests_generated\.tex)$'
+        pass_filenames: false
+
+      # 2b-5: Cross-section consistency validation
+      # Verifies MCP tool catalog vs tools.rs, API endpoint table vs
+      # router.rs, CLI subcommand table, and crate counts.
+      - id: validate-consistency
+        name: "2b-5: validate consistency"
+        entry: python tools/ci/validate_consistency.py --tex docs/architecture.tex --root . --strict
+        language: system
+        files: '(\.rs|architecture\.tex|tests_generated\.tex)$'
+        pass_filenames: false
+
+      # 2b-6: API parity check (non-blocking)
+      # Checks REST/MCP/Python client API parity. Runs without --strict;
+      # Python client gaps are tracked separately and do not block commits.
+      - id: api-parity-check
+        name: "2b-6: API parity check"
+        entry: python tools/ci/api_parity_check.py
+        language: system
+        files: '(router\.rs|dispatch\.rs|client\.py|models\.py|dto\.rs)$'
+        pass_filenames: false
+        verbose: true
+
+      # 2b-7: OpenAPI route parity
+      # Verifies that router.rs route count matches openapi.rs handler count.
+      - id: openapi-parity
+        name: "2b-7: OpenAPI route parity"
+        entry: python tools/ci/check_openapi_parity.py
+        language: system
+        files: '(router\.rs|openapi\.rs)$'
+        pass_filenames: false
+
+      # 2b-8: Python client tests
+      # Runs the pytest suite for the Python client package. Tests use
+      # HTTP response mocking via the responses library -- no running
+      # server is required. Triggers only when files under clients/python/
+      # are modified.
+      - id: python-client-tests
+        name: "2b-8: Python client tests"
+        entry: bash -c 'cd clients/python && python -m pytest tests/ -q --tb=short'
+        language: system
+        files: 'clients/python/'
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 3 (sequential): default-feature Cargo commands, cache-warm
+      #
+      # Clippy default features -> cargo test -> cargo doc test.
+      # All use the same feature set (default) in debug mode, so the
+      # compilation cache from clippy is reused by test and doc test.
+      # ================================================================
+
+      # 3a: Clippy -- default features (shipping configuration)
+      - id: cargo-clippy-default
+        name: "3a: clippy (default)"
+        entry: cargo clippy --workspace --all-targets --locked -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # 3b: Unit and integration tests (default features)
+      - id: cargo-test
+        name: "3b: cargo test"
+        entry: cargo test --workspace --locked
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # 3c: Doc tests (default features)
+      - id: cargo-doc-test
+        name: "3c: cargo doc test"
+        entry: cargo test --doc --workspace --locked
+        language: system
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 4 (sequential): non-default clippy feature variants
+      # ================================================================
+
+      # 4a: Clippy -- headless ort (no GUI, no MCP, no pdfium)
+      - id: cargo-clippy-headless-ort
+        name: "4a: clippy (headless-ort)"
+        entry: cargo clippy -p neuroncite --all-targets --locked --no-default-features --features backend-ort -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # 4b: Clippy -- all features combined (excluding OCR because
+      # leptess requires Tesseract/Leptonica C libraries)
+      - id: cargo-clippy-all-no-ocr
+        name: "4b: clippy (all-no-ocr)"
+        entry: cargo clippy -p neuroncite --all-targets --locked --no-default-features --features backend-ort,gui,mcp,pdfium -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 5 (sequential): release pipeline
+      # ================================================================
+
+      # 5b: Release build
+      - id: cargo-release-build
+        name: "5b: cargo release build"
+        entry: cargo build --workspace --release --locked
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # ================================================================
+      # Phase 6 (parallel in bash hook): post-build verification
+      # ================================================================
+
+      # 6a: Documentation build (warnings as errors)
+      - id: cargo-doc-build
+        name: "6a: cargo doc build"
+        entry: bash -c 'RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --locked'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # 6b: Binary smoke test
+      - id: binary-smoke-test
+        name: "6b: binary smoke test"
+        entry: bash -c './target/release/neuroncite --help > /dev/null 2>&1 || ./target/release/neuroncite.exe --help > /dev/null 2>&1'
+        language: system
+        pass_filenames: false

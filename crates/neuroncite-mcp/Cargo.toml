@@ -1,0 +1,75 @@
+# neuroncite-mcp: Model Context Protocol (MCP) server for NeuronCite.
+#
+# Implements the MCP specification over stdio
+# transport (JSON-RPC 2.0 over stdin/stdout). Exposes NeuronCite operations
+# (search, index, session management, export, model discovery) as MCP tools
+# that AI assistants can call directly. Also provides install/uninstall/status
+# commands for registering the server in Claude Code's MCP configuration file.
+#
+# This crate depends on neuroncite-api for the shared AppState, WorkerHandle,
+# and GPU worker infrastructure. The MCP server reuses the same initialization
+# sequence as the REST server (pool, backend, worker) but replaces the HTTP
+# transport with a synchronous stdin/stdout JSON-RPC loop.
+
+[package]
+name = "neuroncite-mcp"
+description = "MCP (Model Context Protocol) server for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Forward the backend-ort feature to neuroncite-embed and neuroncite-api so the
+# MCP server can access model catalog functions (supported_model_configs,
+# is_cuda_available) and the shared resolve_vector_dimension service function.
+# The binary crate enables this through its own feature forwarding.
+backend-ort = ["neuroncite-embed/backend-ort", "neuroncite-api/backend-ort"]
+
+[dependencies]
+# Internal workspace crates
+neuroncite-core = { workspace = true }
+neuroncite-api = { workspace = true }
+neuroncite-store = { workspace = true }
+neuroncite-search = { workspace = true }
+neuroncite-embed = { workspace = true }
+neuroncite-annotate = { workspace = true, features = ["ocr"] }
+neuroncite-citation = { workspace = true }
+neuroncite-chunk = { workspace = true }
+neuroncite-html = { workspace = true }
+
+# Serialization for JSON-RPC message parsing and tool response construction
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Async runtime for the server event loop and GPU worker channel communication
+tokio = { workspace = true }
+
+# Lock-free atomic pointer swap for reading the HNSW index during search
+arc-swap = { workspace = true }
+
+# SQLite connection pooling (needed for pool type references)
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+
+# Unique identifier generation for indexing jobs
+uuid = { workspace = true }
+
+# Structured logging routed to stderr (stdout is reserved for JSON-RPC)
+tracing = { workspace = true }
+
+# Excel workbook generation for bib_report export
+rust_xlsxwriter = { workspace = true }
+
+# Timestamp formatting in report summary sheets
+chrono = { workspace = true }
+
+# File format detection via file_type_for_path() for the discover handler.
+neuroncite-pdf = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

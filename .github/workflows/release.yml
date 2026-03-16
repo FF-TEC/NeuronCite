@@ -1,0 +1,886 @@
+# GitHub Actions release pipeline for NeuronCite.
+#
+# Triggered when a version tag (v*) is pushed to the repository.
+# Builds release binaries for all supported targets, generates SHA-256
+# checksums, publishes Docker images to ghcr.io, and creates a GitHub
+# Release with all artifacts attached.
+#
+# Pipeline stages:
+#   0. validate-tag       -- Reject malformed tags before consuming resources
+#   1. build-*            -- 7 parallel binary builds (all depend on validate-tag)
+#   2. docker-publish     -- 4 Docker image variants (depends on ALL builds)
+#   3. release            -- GitHub Release with assets (depends on builds + Docker)
+#
+# Binary target matrix:
+#   Windows x86_64        -- all default features, native GUI via wry/WebView2
+#   Linux x86_64 (gui)    -- all features, native GUI via wry/WebKit2GTK
+#                           Runtime requirement: libwebkit2gtk-4.1-0
+#   Linux x86_64 (server) -- no gui, opens browser via opener crate instead
+#                           Zero runtime dependencies beyond glibc
+#   Linux ARM64 (gui)     -- all features, native GUI via wry/WebKit2GTK
+#   Linux ARM64 (server)  -- no gui, zero runtime dependencies
+#   macOS ARM64           -- all default features, native GUI via wry/WebKit
+#   macOS x86_64          -- all default features, native GUI via wry/WebKit
+#
+# Docker image variants (ghcr.io):
+#   nvidia                -- CUDA 12.4 + cuDNN, x86_64
+#   cpu                   -- CPU-only, x86_64
+#   cpu-arm64             -- CPU-only, ARM64
+#
+# The SolidJS frontend is compiled in each build job because rust-embed
+# bakes the compiled frontend/dist/ into the Rust binary at compile time.
+# A shared artifact would save ~30 seconds per job but adds coordination
+# complexity that is not worth it at this scale.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Prevent concurrent releases from overlapping. If two tags are pushed in
+# quick succession (e.g. v1.0.0 then v1.0.1), the second run cancels the
+# first to avoid partial artifacts or conflicting Docker tag overwrites.
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+# Restrict workflow-level permissions to the minimum required. Individual
+# jobs escalate only the permissions they need (contents:write for the
+# GitHub Release, packages:write for ghcr.io Docker push).
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Treat all compiler warnings as errors, matching the CI pipeline policy.
+  RUSTFLAGS: "-D warnings"
+  # Node.js version for the SolidJS frontend build.
+  NODE_VERSION: "25"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Stage 0: Tag format validation
+  # Ensures the pushed tag matches semantic versioning (vMAJOR.MINOR.PATCH with
+  # optional pre-release suffix). Rejects malformed tags like "vabc" or "v.1"
+  # before any build resources are consumed.
+  # ────────────────────────────────────────────────────────────────────────────
+  validate-tag:
+    name: Validate tag format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check semantic version format
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Match: v<major>.<minor>.<patch> with optional pre-release suffix
+          # Valid:   v1.0.0, v0.1.0, v2.3.4-beta.1, v1.0.0-rc.2
+          # Invalid: vabc, v.1, v1, v1.0, v1.0.0.0
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$'; then
+            echo "ERROR: Tag '$TAG' does not match semantic version format (vMAJOR.MINOR.PATCH[-PRERELEASE])"
+            exit 1
+          fi
+          echo "Tag '$TAG' is valid"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Windows x86_64
+  # Features: backend-ort, web, gui, mcp, pdfium, ocr  (all defaults)
+  # WebView2 ships pre-installed on Windows 10 and Windows 11.
+  # No additional runtime libraries are required on the user's machine.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Build / Windows x86_64
+    needs: validate-tag
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (all default features)
+        run: cargo build --release -p neuroncite
+
+      - name: Rename binary to platform-specific name
+        run: copy target\release\neuroncite.exe neuroncite-windows-x64.exe
+        shell: cmd
+
+      - name: Compute SHA-256 checksum
+        run: |
+          $hash = (Get-FileHash neuroncite-windows-x64.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  neuroncite-windows-x64.exe" | Out-File -Encoding ascii neuroncite-windows-x64.exe.sha256
+        shell: pwsh
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-windows-x64
+          path: |
+            neuroncite-windows-x64.exe
+            neuroncite-windows-x64.exe.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Linux x86_64 -- GUI variant
+  # Features: backend-ort, web, gui, mcp, pdfium, ocr  (all defaults)
+  # wry uses WebKit2GTK for the native window on Linux. The CI runner installs
+  # the build-time development headers. Users need the runtime library:
+  #   sudo apt install libwebkit2gtk-4.1-0  (Ubuntu 22.04+)
+  #   sudo dnf install webkit2gtk4.1        (Fedora 38+)
+  # Most desktop Linux environments (GNOME, KDE) have this installed already
+  # as a transitive dependency of other GTK applications.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-linux-x64-gui:
+    name: Build / Linux x86_64 (GUI)
+    needs: validate-tag
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WebKit2GTK build dependencies
+        # libwebkit2gtk-4.1-dev provides the headers and pkg-config file that
+        # wry links against at compile time. libgtk-3-dev is the underlying
+        # window toolkit. The other packages are transitive build requirements.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (all default features including gui)
+        run: cargo build --release -p neuroncite
+
+      - name: Rename binary to platform-specific name
+        run: cp target/release/neuroncite neuroncite-linux-x64
+
+      - name: Compute SHA-256 checksum
+        run: sha256sum neuroncite-linux-x64 > neuroncite-linux-x64.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-linux-x64
+          path: |
+            neuroncite-linux-x64
+            neuroncite-linux-x64.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Linux x86_64 -- Server variant (no GUI)
+  # Features: backend-ort, web, mcp, pdfium, ocr  (gui excluded)
+  # Without the gui feature the binary opens the default browser via the opener
+  # crate instead of a native window. This variant has zero runtime dependencies
+  # beyond glibc and is suitable for headless servers and SSH environments.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-linux-x64-server:
+    name: Build / Linux x86_64 (Server)
+    needs: validate-tag
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install build dependencies
+        # rfd (native file dialog) depends on wayland-sys and gtk at compile time
+        # even without the gui feature. The resulting binary dynamically links to
+        # these libraries but functions correctly on headless servers where the
+        # browse/native endpoint gracefully falls back.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (no gui)
+        run: >
+          cargo build --release -p neuroncite
+          --no-default-features
+          --features backend-ort,web,mcp,pdfium,ocr
+
+      - name: Rename binary to platform-specific name
+        run: cp target/release/neuroncite neuroncite-linux-x64-server
+
+      - name: Compute SHA-256 checksum
+        run: sha256sum neuroncite-linux-x64-server > neuroncite-linux-x64-server.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-linux-x64-server
+          path: |
+            neuroncite-linux-x64-server
+            neuroncite-linux-x64-server.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Linux ARM64 -- GUI variant
+  # Uses the GitHub-hosted ARM64 runner (available for public repos at no cost).
+  # Runtime requirement on the user's machine: libwebkit2gtk-4.1-0
+  # ────────────────────────────────────────────────────────────────────────────
+  build-linux-arm64-gui:
+    name: Build / Linux ARM64 (GUI)
+    needs: validate-tag
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WebKit2GTK build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (all default features including gui)
+        run: cargo build --release -p neuroncite
+
+      - name: Rename binary to platform-specific name
+        run: cp target/release/neuroncite neuroncite-linux-arm64
+
+      - name: Compute SHA-256 checksum
+        run: sha256sum neuroncite-linux-arm64 > neuroncite-linux-arm64.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-linux-arm64
+          path: |
+            neuroncite-linux-arm64
+            neuroncite-linux-arm64.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Linux ARM64 -- Server variant (no GUI)
+  # Zero runtime dependencies. Suitable for Raspberry Pi, ARM servers, and
+  # any headless ARM64 Linux environment.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-linux-arm64-server:
+    name: Build / Linux ARM64 (Server)
+    needs: validate-tag
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install build dependencies
+        # rfd (native file dialog) depends on wayland-sys and gtk at compile time
+        # even without the gui feature. The resulting binary dynamically links to
+        # these libraries but functions correctly on headless servers where the
+        # browse/native endpoint gracefully falls back.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (no gui)
+        run: >
+          cargo build --release -p neuroncite
+          --no-default-features
+          --features backend-ort,web,mcp,pdfium,ocr
+
+      - name: Rename binary to platform-specific name
+        run: cp target/release/neuroncite neuroncite-linux-arm64-server
+
+      - name: Compute SHA-256 checksum
+        run: sha256sum neuroncite-linux-arm64-server > neuroncite-linux-arm64-server.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-linux-arm64-server
+          path: |
+            neuroncite-linux-arm64-server
+            neuroncite-linux-arm64-server.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # macOS ARM64 (Apple Silicon: M1, M2, M3, M4)
+  # wry uses the system WebKit which ships with every macOS version.
+  # No additional runtime libraries required. macos-14 runs on Apple Silicon.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-macos-arm64:
+    name: Build / macOS ARM64
+    needs: validate-tag
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (all default features)
+        run: cargo build --release -p neuroncite
+
+      # Extract the semantic version from the git tag for the Info.plist
+      # version fields. Strips the "v" prefix (e.g. "v1.2.3" -> "1.2.3").
+      - name: Extract version from git tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Assemble a standard macOS .app bundle structure so Finder, Dock, and
+      # Spotlight display the application icon and recognize it as a launchable
+      # application. The __VERSION__ placeholder in the Info.plist template is
+      # replaced with the actual release version.
+      - name: Assemble NeuronCite.app bundle
+        run: |
+          APP="NeuronCite.app"
+          mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
+          cp target/release/neuroncite "${APP}/Contents/MacOS/neuroncite"
+          cp crates/neuroncite/assets/icon.icns "${APP}/Contents/Resources/AppIcon.icns"
+          sed "s/__VERSION__/${{ steps.version.outputs.version }}/g" \
+            crates/neuroncite/assets/Info.plist > "${APP}/Contents/Info.plist"
+
+      # Ad-hoc sign the entire .app bundle so macOS Gatekeeper recognises it
+      # as a valid (though unidentified-developer) application. Without any
+      # signature at all, recent macOS versions silently refuse to launch the
+      # app even when the user clicks "Open Anyway". The --deep flag signs
+      # nested code objects, --force replaces the linker's per-binary ad-hoc
+      # signature with one that covers the full bundle, and --options runtime
+      # enables the hardened runtime (required for notarisation later).
+      - name: Ad-hoc codesign the .app bundle
+        run: >
+          codesign --force --deep --sign -
+          --options runtime
+          --entitlements crates/neuroncite/assets/NeuronCite.entitlements
+          NeuronCite.app
+
+      # Use ditto (macOS-native archiver) instead of zip to preserve resource
+      # forks, extended attributes, and the .app bundle structure. This is
+      # required for code signing compatibility when Apple Developer ID
+      # signing is added later.
+      - name: Create distributable zip archive
+        run: ditto -c -k --sequesterRsrc --keepParent NeuronCite.app neuroncite-macos-arm64.zip
+
+      - name: Compute SHA-256 checksum
+        run: shasum -a 256 neuroncite-macos-arm64.zip > neuroncite-macos-arm64.zip.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-macos-arm64
+          path: |
+            neuroncite-macos-arm64.zip
+            neuroncite-macos-arm64.zip.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # macOS x86_64 (Intel)
+  # macos-13 is the last GitHub-hosted runner with Intel hardware.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-macos-x64:
+    name: Build / macOS x86_64
+    needs: validate-tag
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain with x86_64 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: crates/neuroncite-web/frontend
+        run: npm ci
+
+      - name: Build SolidJS frontend
+        working-directory: crates/neuroncite-web/frontend
+        run: npx vite build
+
+      - name: Build release binary (cross-compile for x86_64)
+        run: cargo build --release -p neuroncite --target x86_64-apple-darwin
+
+      # Extract the semantic version from the git tag for the Info.plist
+      # version fields. Strips the "v" prefix (e.g. "v1.2.3" -> "1.2.3").
+      - name: Extract version from git tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Assemble a standard macOS .app bundle structure so Finder, Dock, and
+      # Spotlight display the application icon and recognize it as a launchable
+      # application. The __VERSION__ placeholder in the Info.plist template is
+      # replaced with the actual release version.
+      - name: Assemble NeuronCite.app bundle
+        run: |
+          APP="NeuronCite.app"
+          mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
+          cp target/x86_64-apple-darwin/release/neuroncite "${APP}/Contents/MacOS/neuroncite"
+          cp crates/neuroncite/assets/icon.icns "${APP}/Contents/Resources/AppIcon.icns"
+          sed "s/__VERSION__/${{ steps.version.outputs.version }}/g" \
+            crates/neuroncite/assets/Info.plist > "${APP}/Contents/Info.plist"
+
+      # Ad-hoc sign the entire .app bundle. See the ARM64 build step
+      # comment for the full explanation.
+      - name: Ad-hoc codesign the .app bundle
+        run: >
+          codesign --force --deep --sign -
+          --options runtime
+          --entitlements crates/neuroncite/assets/NeuronCite.entitlements
+          NeuronCite.app
+
+      # Use ditto (macOS-native archiver) instead of zip to preserve resource
+      # forks, extended attributes, and the .app bundle structure. This is
+      # required for code signing compatibility when Apple Developer ID
+      # signing is added later.
+      - name: Create distributable zip archive
+        run: ditto -c -k --sequesterRsrc --keepParent NeuronCite.app neuroncite-macos-x64.zip
+
+      - name: Compute SHA-256 checksum
+        run: shasum -a 256 neuroncite-macos-x64.zip > neuroncite-macos-x64.zip.sha256
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neuroncite-macos-x64
+          path: |
+            neuroncite-macos-x64.zip
+            neuroncite-macos-x64.zip.sha256
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Docker Images -> GitHub Container Registry (ghcr.io)
+  # Builds and pushes multi-variant Docker images for all GPU configurations
+  # and architectures. Depends on ALL binary build jobs so that Docker images
+  # are only published when the entire build matrix succeeds. Each variant
+  # uses the same Dockerfile with different build arguments for the GPU
+  # runtime and base image.
+  #
+  # Published images (example for tag v1.2.3):
+  #   ghcr.io/<owner>/neuroncite:1.2.3-nvidia    (CUDA 12.4 + cuDNN, x86_64)
+    #   ghcr.io/<owner>/neuroncite:1.2.3-cpu        (CPU-only, x86_64)
+  #   ghcr.io/<owner>/neuroncite:1.2.3-cpu-arm64  (CPU-only, ARM64)
+  #   ghcr.io/<owner>/neuroncite:latest-nvidia     (floating tag)
+    #   ghcr.io/<owner>/neuroncite:latest-cpu         (floating tag)
+  #   ghcr.io/<owner>/neuroncite:latest-cpu-arm64   (floating tag)
+  #
+  # The nvidia variant additionally receives the bare :latest and :1.2.3 tags
+  # because NVIDIA is the most common GPU deployment target.
+  #
+  # Pre-release tags (e.g. v1.0.0-beta.1) skip the :latest-* floating tags
+  # to avoid overwriting stable releases.
+  # ────────────────────────────────────────────────────────────────────────────
+  docker-publish:
+    name: Docker / ${{ matrix.variant }}
+    needs:
+      - build-windows
+      - build-linux-x64-gui
+      - build-linux-x64-server
+      - build-linux-arm64-gui
+      - build-linux-arm64-server
+      - build-macos-arm64
+      - build-macos-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: nvidia
+            gpu: nvidia
+            runtime_base: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+            platform: linux/amd64
+          - variant: cpu
+            gpu: cpu
+            runtime_base: ubuntu:22.04
+            platform: linux/amd64
+          - variant: cpu-arm64
+            gpu: cpu
+            runtime_base: ubuntu:22.04
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up QEMU for cross-platform builds
+        if: matrix.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract the semantic version from the git tag (e.g. "v1.2.3" -> "1.2.3").
+      # The version is used for image tags below.
+      - name: Extract version from git tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Compute the full set of Docker tags for this variant.
+      # Stable releases (no hyphen in tag) get both versioned and :latest-* tags.
+      # Pre-releases only get the versioned tag to avoid polluting :latest.
+      - name: Compute image tags
+        id: tags
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/neuroncite"
+          VERSION="${{ steps.version.outputs.version }}"
+          VARIANT="${{ matrix.variant }}"
+          IS_PRERELEASE="${{ contains(github.ref_name, '-') }}"
+
+          TAGS="${IMAGE}:${VERSION}-${VARIANT}"
+
+          if [ "$IS_PRERELEASE" = "false" ]; then
+            TAGS="${TAGS},${IMAGE}:latest-${VARIANT}"
+          fi
+
+          # The nvidia variant receives the bare :latest and :version tags
+          # as the default pull target for users who omit the variant suffix.
+          if [ "$VARIANT" = "nvidia" ]; then
+            TAGS="${TAGS},${IMAGE}:${VERSION}"
+            if [ "$IS_PRERELEASE" = "false" ]; then
+              TAGS="${TAGS},${IMAGE}:latest"
+            fi
+          fi
+
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            GPU=${{ matrix.gpu }}
+            RUNTIME_BASE=${{ matrix.runtime_base }}
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=NeuronCite
+            org.opencontainers.image.description=Scientific PDF search engine with GPU-accelerated embedding inference
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0
+          cache-from: type=gha,scope=docker-${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=docker-${{ matrix.variant }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # GitHub Release
+  # Waits for all binary build jobs, collects their artifacts, merges the
+  # per-platform SHA-256 sidecar files into a single checksums.txt, and
+  # creates the release. Docker publish runs independently and does not
+  # block the release. Tags containing a hyphen (e.g. v1.0.0-beta.1)
+  # are marked as pre-releases.
+  # ────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    needs:
+      - build-windows
+      - build-linux-x64-gui
+      - build-linux-x64-server
+      - build-linux-arm64-gui
+      - build-linux-arm64-server
+      - build-macos-arm64
+      - build-macos-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: false
+          path: artifacts
+
+      - name: Flatten artifacts into a single directory
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f | while read f; do
+            mv "$f" release-assets/
+          done
+
+      # GitHub Actions artifact upload/download does not preserve Unix file
+      # permissions. Without this step the Linux binaries arrive without the
+      # execute bit. The macOS artifacts are .zip archives containing .app
+      # bundles and do not need executable permission on the archive itself.
+      - name: Restore executable permissions on Linux binaries
+        run: |
+          chmod +x release-assets/neuroncite-linux-x64 \
+                   release-assets/neuroncite-linux-x64-server \
+                   release-assets/neuroncite-linux-arm64 \
+                   release-assets/neuroncite-linux-arm64-server
+          ls -lh release-assets/
+
+      - name: Merge per-platform checksums into checksums.txt
+        run: |
+          cat release-assets/*.sha256 > release-assets/checksums.txt
+          rm release-assets/*.sha256
+          echo "--- checksums.txt ---"
+          cat release-assets/checksums.txt
+
+      # TODO: Enable macOS code signing when Apple Developer ID certificate is available.
+      # Requires APPLE_DEVELOPER_ID and APPLE_KEYCHAIN_PASSWORD secrets to be set.
+      # - name: Sign binary (macOS)
+      #   if: matrix.os == 'macos-latest'
+      #   run: |
+      #     codesign --deep --force --sign "${{ secrets.APPLE_DEVELOPER_ID }}" \
+      #       target/release/neuroncite
+
+      # TODO: Enable Windows code signing when certificate is available.
+      # Requires WINDOWS_CERT_PFX and WINDOWS_CERT_PASSWORD secrets to be set.
+      # - name: Sign binary (Windows)
+      #   if: matrix.os == 'windows-latest'
+      #   run: |
+      #     signtool sign /fd SHA256 /f cert.pfx /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" \
+      #       target\release\neuroncite.exe
+
+      # Extract the semantic version from the git tag for use in the release
+      # body. Strips the "v" prefix (e.g. "v1.2.3" -> "1.2.3") to match the
+      # Docker image tags produced by the docker-publish job.
+      - name: Extract version from git tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            release-assets/neuroncite-windows-x64.exe
+            release-assets/neuroncite-linux-x64
+            release-assets/neuroncite-linux-x64-server
+            release-assets/neuroncite-linux-arm64
+            release-assets/neuroncite-linux-arm64-server
+            release-assets/neuroncite-macos-arm64.zip
+            release-assets/neuroncite-macos-x64.zip
+            release-assets/checksums.txt
+          body: |
+            ## Installation
+
+            Download the binary for your platform and run it directly -- no installation required.
+
+            ### Windows
+            | File | Notes |
+            |------|-------|
+            | `neuroncite-windows-x64.exe` | Native GUI window (WebView2, pre-installed on Windows 10/11) |
+
+            ### Linux
+            | File | Notes |
+            |------|-------|
+            | `neuroncite-linux-x64` | Native GUI window. Requires `libwebkit2gtk-4.1-0` |
+            | `neuroncite-linux-x64-server` | No native window, opens browser automatically. Zero runtime dependencies |
+            | `neuroncite-linux-arm64` | ARM64 GUI variant (Raspberry Pi 4/5, ARM servers with desktop) |
+            | `neuroncite-linux-arm64-server` | ARM64 headless variant |
+
+            **Install WebKit2GTK for the GUI variant (Ubuntu/Debian):**
+            ```bash
+            sudo apt install libwebkit2gtk-4.1-0
+            ```
+            **Fedora/RHEL:**
+            ```bash
+            sudo dnf install webkit2gtk4.1
+            ```
+
+            ### macOS
+            | File | Notes |
+            |------|-------|
+            | `neuroncite-macos-arm64.zip` | Apple Silicon (M1/M2/M3/M4/M5) -- .app bundle |
+            | `neuroncite-macos-x64.zip` | Intel Mac -- .app bundle |
+
+            ---
+
+            ### Unsigned binaries
+
+            The binaries are not yet code-signed. Your operating system may show a security warning on first launch. This is expected and safe to bypass:
+
+            **macOS** -- Gatekeeper blocks unsigned apps. Remove the quarantine flag after unzipping:
+            ```bash
+            xattr -cr NeuronCite.app
+            ```
+            Alternatively: try to open the app once (it will be blocked), then go to **System Settings > Privacy & Security**, scroll down to the blocked app notice, and click **Open Anyway**.
+
+            **Windows** -- SmartScreen may show a warning. Click **More info**, then **Run anyway**.
+
+            **Linux** -- No signature checks by default. Just make the binary executable with `chmod +x`.
+
+            ---
+
+            ### Quick start (macOS)
+            ```bash
+            unzip neuroncite-macos-arm64.zip
+            xattr -cr NeuronCite.app
+            open NeuronCite.app
+            ```
+
+            ### Quick start (Linux)
+            ```bash
+            chmod +x neuroncite-linux-x64
+            ./neuroncite-linux-x64
+            ```
+
+            ### Quick start (Windows)
+            Double-click `neuroncite-windows-x64.exe`.
+
+            ### Docker
+
+            Pre-built images are published to GitHub Container Registry:
+
+            | Variant | Command |
+            |---------|---------|
+            | NVIDIA GPU | `docker pull ghcr.io/${{ github.repository_owner }}/neuroncite:${{ steps.version.outputs.version }}-nvidia` |
+            | CPU (x86_64) | `docker pull ghcr.io/${{ github.repository_owner }}/neuroncite:${{ steps.version.outputs.version }}-cpu` |
+            | CPU (ARM64) | `docker pull ghcr.io/${{ github.repository_owner }}/neuroncite:${{ steps.version.outputs.version }}-cpu-arm64` |
+
+            ```bash
+            # NVIDIA GPU (default)
+            docker run --gpus all -p 3030:3030 -v neuroncite-data:/data/Documents/NeuronCite \
+              ghcr.io/${{ github.repository_owner }}/neuroncite:latest
+
+            # CPU only
+            docker run -p 3030:3030 -v neuroncite-data:/data/Documents/NeuronCite \
+              ghcr.io/${{ github.repository_owner }}/neuroncite:latest-cpu
+            ```
+
+            ### Verify file integrity
+            ```bash
+            sha256sum --check checksums.txt
+            ```

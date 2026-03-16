@@ -1,0 +1,44 @@
+# Rust build artifacts (several GB, rebuilt inside container)
+target/
+
+# Node.js dependencies (reinstalled via npm ci in build stage)
+node_modules/
+
+# Version control and CI (not needed in build context)
+.git/
+.github/
+
+# IDE and editor configuration
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large artifacts not needed for the application build
+website.zip
+website/
+*.zip
+
+# Generated documentation artifacts (regenerable from .tex source)
+docs/*.pdf
+docs/*.aux
+docs/*.log
+docs/*.out
+
+# Development logs and test output
+commit_output.log
+test_output.txt
+test_results.*
+review_full_*.md
+
+# Development-only tooling (Python validation scripts, license headers)
+scripts/
+tools/
+
+# Client SDKs (not part of the core application)
+clients/
+
+# OS metadata
+.DS_Store
+Thumbs.db

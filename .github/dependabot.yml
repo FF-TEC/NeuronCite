@@ -1,0 +1,88 @@
+# Dependabot configuration for automated dependency update pull requests.
+# Covers three ecosystems: Rust crates (Cargo), Node.js packages (npm),
+# Docker base images, and GitHub Actions versions.
+#
+# Schedule: weekly on Monday mornings (UTC) to batch updates into a single
+# review session rather than creating PRs throughout the week.
+#
+# Each ecosystem is configured with a conservative open-pull-requests-limit
+# to avoid overwhelming the review queue.
+
+version: 2
+
+updates:
+  # Rust workspace dependencies (Cargo.toml / Cargo.lock).
+  # Monitors all crates declared in [workspace.dependencies] and each
+  # crate's own Cargo.toml for outdated or vulnerable versions.
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo):"
+    ignore:
+      # cairo-rs is pinned to 0.18 because tao 0.34 (used for the native
+      # splash screen) depends on gtk 0.18 which requires cairo-rs 0.18.
+      # Bumping cairo-rs without bumping tao/gtk causes compilation errors.
+      - dependency-name: "cairo-rs"
+        versions: [">= 0.19"]
+      # windows crate is pinned to 0.61 because tao 0.34 (native window
+      # management) depends on windows 0.61. Bumping to 0.62+ would pull
+      # in a second copy of the windows crate and its proc-macros.
+      - dependency-name: "windows"
+        versions: [">= 0.62"]
+
+  # Node.js frontend dependencies (crates/neuroncite-web/frontend/).
+  # Tracks SolidJS, Vite, TypeScript, and all transitive npm packages.
+  - package-ecosystem: "npm"
+    directory: "/crates/neuroncite-web/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "deps(npm):"
+    ignore:
+      # eslint is pinned to v9 because eslint-plugin-jsx-a11y (peer dep)
+      # only supports eslint ^3 through ^9. Upgrading to v10 requires the
+      # flat config format and a compatible jsx-a11y plugin version.
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+
+  # Docker base images (docker/Dockerfile).
+  # Monitors nvidia/cuda, rocm/dev-ubuntu, ubuntu, node, and rust base
+  # images for security patches and version updates.
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker):"
+
+  # GitHub Actions workflow dependencies (.github/workflows/).
+  # Tracks action versions (actions/checkout, dtolnay/rust-toolchain, etc.)
+  # for security patches and feature updates.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps(actions):"

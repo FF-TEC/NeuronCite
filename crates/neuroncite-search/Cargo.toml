@@ -1,0 +1,26 @@
+# neuroncite-search: Search pipeline combining HNSW approximate nearest neighbor
+# queries, BM25 keyword search via FTS5, Reciprocal Rank Fusion, deduplication,
+# optional cross-encoder reranking, and citation assembly.
+
+[package]
+name = "neuroncite-search"
+description = "Hybrid search pipeline (vector + keyword) for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+neuroncite-core = { workspace = true }
+neuroncite-store = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+hnsw_rs = { workspace = true }
+rusqlite = { workspace = true }
+tokenizers = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

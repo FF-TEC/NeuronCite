@@ -1,0 +1,284 @@
+# Root workspace manifest for the NeuronCite project.
+# Defines all workspace members, shared dependency versions, and feature flags
+# that are forwarded through the crate hierarchy.
+
+[workspace]
+resolver = "3"
+members = [
+    "crates/neuroncite-core",
+    "crates/neuroncite-pdf",
+    "crates/neuroncite-chunk",
+    "crates/neuroncite-embed",
+    "crates/neuroncite-store",
+    "crates/neuroncite-search",
+    "crates/neuroncite-api",
+    "crates/neuroncite-pipeline",
+    "crates/neuroncite-mcp",
+
+    "crates/neuroncite-annotate",
+    "crates/neuroncite-citation",
+    "crates/neuroncite-web",
+    "crates/neuroncite-html",
+    "crates/neuroncite-llm",
+    "crates/neuroncite",
+
+    "crates/neuroncite-testgen",
+]
+
+# Shared package metadata inherited by each crate via `version.workspace = true`,
+# `edition.workspace = true`, etc. in its own Cargo.toml. Changing the version
+# here updates all 15 crates at once; the frontend package.json must be bumped
+# manually (it is private and never published to npm).
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-only"
+repository = "https://github.com/FF-TEC/NeuronCite"
+homepage = "https://neuroncite.com"
+description = "Local, privacy-preserving semantic document search engine"
+publish = false
+
+# Workspace-wide lint configuration inherited by each crate via
+# `[lints] workspace = true` in its own Cargo.toml. Crate-specific lint
+# overrides (e.g. `#![forbid(unsafe_code)]`, additional `#![allow(...)]`)
+# remain in the crate's source file and layer on top of these workspace
+# defaults.
+[workspace.lints.rust]
+# Treat compiler warnings as errors in all workspace crates. This mirrors
+# the `#![deny(warnings)]` attribute that was previously declared in each
+# crate's lib.rs/main.rs. Centralizing it here avoids repeating the
+# attribute in 14 crates and ensures consistent enforcement.
+warnings = "deny"
+
+[workspace.lints.clippy]
+# Clippy pedantic lints that are intentionally suppressed workspace-wide.
+# These are documentation-style and naming-convention lints that produce
+# excessive noise in a large workspace without improving code correctness.
+doc_markdown = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_panics_doc = "allow"
+
+# Centralized dependency versions shared across all workspace members.
+# Each crate references these via { workspace = true } in its own Cargo.toml.
+[workspace.dependencies]
+# Internal crates
+neuroncite-core = { path = "crates/neuroncite-core" }
+neuroncite-pdf = { path = "crates/neuroncite-pdf" }
+neuroncite-chunk = { path = "crates/neuroncite-chunk" }
+# neuroncite-embed is declared with default-features = false at the workspace level
+# so that the binary crate can selectively enable backend features through its own
+# feature flag forwarding. Without this, Cargo would always activate the default
+# backend-ort feature regardless of the binary crate's feature selection.
+neuroncite-embed = { path = "crates/neuroncite-embed", default-features = false }
+neuroncite-store = { path = "crates/neuroncite-store" }
+neuroncite-search = { path = "crates/neuroncite-search" }
+neuroncite-api = { path = "crates/neuroncite-api" }
+neuroncite-pipeline = { path = "crates/neuroncite-pipeline" }
+neuroncite-mcp = { path = "crates/neuroncite-mcp" }
+neuroncite-annotate = { path = "crates/neuroncite-annotate" }
+neuroncite-citation = { path = "crates/neuroncite-citation" }
+neuroncite-web = { path = "crates/neuroncite-web" }
+neuroncite-llm = { path = "crates/neuroncite-llm" }
+neuroncite-html = { path = "crates/neuroncite-html" }
+
+# Serialization and configuration
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging and diagnostics
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Cryptographic hashing for content deduplication and model checksum verification
+sha2 = "0.10"
+
+# Constant-time comparison for bearer token authentication (prevents timing attacks)
+subtle = "2"
+
+# Concurrent hash map for per-IP rate limiting in the auth middleware
+dashmap = "6"
+
+# Unique identifier generation for sessions, jobs, and idempotency keys
+uuid = { version = "1", features = ["v4"] }
+
+# Async runtime and HTTP server. Only the features actually used across the
+# workspace are enabled. "full" was pulling in ~8 unused sub-features (fs,
+# io-std, io-util, process, time, parking_lot, test-util) that increase
+# compile time and binary size.
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "sync", "signal", "net", "time"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+
+# CLI argument parsing with derive macros
+clap = { version = "4.5", features = ["derive"] }
+
+# SQLite database and connection pooling
+rusqlite = { version = "0.32", features = ["bundled"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.25"
+
+# Approximate nearest neighbor index (Hierarchical Navigable Small World graph).
+# Pinned to an exact version because the `ouroboros` self-referential struct in
+# neuroncite-store/src/index/hnsw.rs depends on `HnswIo::load_hnsw` operating
+# in non-mmap copy mode (all point data copied into owned Vec<T> allocations).
+# The `#[covariant]` assertion on the `Hnsw` dependent field is correct only
+# when the lifetime 'b in Hnsw<'b, T, D> appears exclusively in covariant
+# positions (shared references). A version upgrade requires re-verifying that
+# load_hnsw still operates in copy mode and that the covariant annotation is
+# still valid before the pin is bumped.
+hnsw_rs = "=0.3.4"
+
+# Atomic reference-counted pointer swapping for lock-free index hot-reloading
+arc-swap = "1"
+
+# Memory-mapped file I/O for external embedding storage
+memmap2 = "0.9"
+
+# HuggingFace tokenizer for subword tokenization across all embedding backends
+tokenizers = "0.22"
+
+# PDF text extraction (pure Rust, the default backend)
+pdf-extract = "0.10"
+
+# Low-level PDF document parsing for per-page text extraction. Used as a
+# fallback when pdf-extract's form-feed page separators are missing.
+lopdf = "0.39"
+
+# PDF text extraction via pdfium (handles multi-column layouts, optional)
+pdfium-render = "0.8"
+
+# Image encoding/decoding (used by the OCR module to convert pdfium bitmaps
+# to PNG bytes for Tesseract CLI input). Must match the version used by
+# pdfium-render to avoid type incompatibilities.
+image = "0.25"
+
+# OCR via Tesseract CLI subprocess (optional, requires Tesseract binary at
+# runtime; auto-downloaded on first use if not found on PATH)
+
+# Unicode text processing for sentence segmentation and normalization
+unicode-segmentation = "1"
+unicode-normalization = "0.1"
+
+# ONNX Runtime embedding backend (default backend, selected by backend-ort feature).
+# Pinned to the latest release candidate because ort 2.0.0 stable has not been
+# published to crates.io yet. Without load-dynamic, ort-sys downloads the
+# correct ORT 1.23.x libraries via its download-binaries feature and links
+# statically. This eliminates runtime DLL version mismatches. The MSVC C++
+# runtime linker conflict (msvcprt.lib vs libcpmt.lib) is resolved by
+# /NODEFAULTLIB:LIBCMT in the neuroncite binary crate's build.rs.
+# The = prefix pins to an exact RC version to prevent silent upgrades to a future
+# RC that may introduce breaking API changes before stable release.
+# default-features = false disables the default api-24 feature. api-23 is set
+# explicitly to match the locally cached ORT 1.23.2 binary. Using api-24 with
+# ORT 1.23.x causes init_from() to hang on Windows during the version mismatch
+# error path (FreeLibrary on the GPU variant DLL triggers a deadlock in the
+# CUDA driver's DllMain cleanup). When upgrading the ORT binary to 1.24.x,
+# change api-23 to api-24 (or re-enable default-features).
+# TODO(ort-stable): remove the = prefix when ort 2.0.0 stable is published to crates.io.
+ort = { version = "=2.0.0-rc.12", default-features = false, features = ["std", "ndarray", "tracing", "load-dynamic", "cuda", "coreml", "directml", "half", "api-23"] }
+# IEEE 754 half-precision (f16) support, required for extracting f16 output
+# tensors from ONNX models (e.g. Qwen3-Embedding) and converting to f32.
+half = "2.7"
+ndarray = "0.17"
+
+# OpenAPI specification generation from axum handler annotations
+utoipa = { version = "5", features = ["axum_extras"] }
+
+
+# Cross-platform "open file with default application" for launching PDF viewers
+opener = "0.8"
+
+# Native OS window management (cross-platform: Win32, Cocoa, GTK).
+# Used by the gui feature to create the application window that hosts the WebView.
+tao = { version = "0.34", features = ["rwh_06"] }
+
+# WebView embedding (WebView2 on Windows, WebKit on macOS/Linux).
+# Renders the SolidJS frontend inside a native OS window instead of a browser tab.
+wry = "0.54"
+
+# Porter stemmer for keyword overlap computation in the verify endpoint
+rust-stemmers = "1"
+
+# Data parallelism for CPU-bound work (PDF extraction, chunking)
+rayon = "1.10"
+
+# CSV parsing for annotation input
+csv = "1.3"
+
+# String similarity metrics (Jaro-Winkler, Levenshtein) for PDF filename matching
+strsim = "0.11"
+
+# Regular expressions for filename metadata extraction
+regex = "1"
+
+# Excel workbook generation for citation verification export
+rust_xlsxwriter = "0.94"
+
+# Date/time formatting for annotation report timestamps
+chrono = "0.4"
+
+# Test utilities
+tempfile = "3"
+reqwest = { version = "0.12", features = ["json", "blocking", "rustls-tls", "gzip", "brotli", "deflate", "cookies", "stream"] }
+futures-util = "0.3"
+
+# HTML parsing and URL handling for the neuroncite-html crate
+scraper = "0.25"
+url = "2"
+
+# Embeds compiled frontend assets into the binary at compile time
+rust-embed = "8"
+
+# MIME type detection for serving embedded static files with correct Content-Type
+mime_guess = "2"
+
+# Native OS file/folder dialogs (IFileOpenDialog on Windows, NSOpenPanel on macOS,
+# xdg-desktop-portal on Linux). Used by the web frontend's folder picker endpoint.
+rfd = "0.17"
+
+# SSE stream adapter for tokio broadcast channels
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+# Additional axum response types (typed headers for SSE)
+axum-extra = { version = "0.12", features = ["typed-header"] }
+
+# Benchmarking framework with HTML report generation
+criterion = { version = "0.8", features = ["html_reports"] }
+
+# Self-referential struct support for eliminating unsafe transmutes
+# where an owner and a type borrowing from it must live in the same struct.
+ouroboros = "0.18"
+
+# Property-based testing framework for generative test strategies
+proptest = "1"
+
+# Windows resource compiler for embedding application icon, version info,
+# and manifest into the Windows executable (.exe) at link time.
+winres = "0.1"
+
+[profile.release]
+# Link-time optimization for smaller binary size and cross-crate inlining
+lto = "thin"
+# Single codegen unit for maximum optimization at the cost of compile time
+codegen-units = 1
+# Strip debug symbols from the release binary
+strip = true
+
+# Benchmarks inherit from the dev profile by default, which disables LTO
+# and uses multiple codegen units. This produces benchmark numbers that do
+# not reflect production performance. Inheriting from release ensures
+# benchmarks run with the same optimization level as the shipped binary.
+[profile.bench]
+inherits = "release"
+# Re-enable debug info so criterion can resolve symbols in flamegraphs.
+debug = true
+strip = false

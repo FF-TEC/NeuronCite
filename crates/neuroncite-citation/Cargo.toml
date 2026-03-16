@@ -1,0 +1,55 @@
+# Citation verification pipeline for LaTeX documents.
+#
+# Parses LaTeX (.tex) and BibTeX (.bib) files to extract citation commands,
+# resolves cite-keys against BibTeX entries, matches cited works to indexed
+# PDFs in the NeuronCite database, and groups citations into batches for
+# sub-agent processing. Provides DB operations for the claim/submit workflow
+# and export functions for generating annotation CSVs, correction reports,
+# and summary statistics.
+
+[package]
+name = "neuroncite-citation"
+description = "LaTeX citation verification pipeline for NeuronCite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Internal workspace crates
+neuroncite-store = { workspace = true }
+
+# Regular expressions for LaTeX citation command extraction and BibTeX parsing
+regex = { workspace = true }
+
+# Serialization for result_json, correction objects, and export formats
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# SQLite database access for citation_row CRUD operations
+rusqlite = { workspace = true }
+
+# Structured logging for parse warnings and batch assignment diagnostics
+tracing = { workspace = true }
+
+# Typed error variants for the citation pipeline
+thiserror = { workspace = true }
+
+# Timestamp generation for claimed_at and report timestamps
+chrono = { workspace = true }
+
+# CSV generation for annotation pipeline input
+csv = { workspace = true }
+
+# UUID generation for citation verification job IDs
+uuid = { workspace = true }
+
+# Excel workbook generation with cell formatting, conditional colors, and
+# frozen panes for the human-readable citation verification export
+rust_xlsxwriter = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

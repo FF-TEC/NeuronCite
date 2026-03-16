@@ -1,0 +1,10 @@
+# Cargo configuration for the NeuronCite workspace.
+#
+# Contains target-specific linker settings for cross-compilation scenarios.
+# These settings apply when compiling for targets other than the host platform.
+
+# Linux ARM64 cross-compilation from an x86_64 host.
+# Requires the aarch64-linux-gnu-gcc cross-compiler toolchain
+# (apt install gcc-aarch64-linux-gnu on Debian/Ubuntu).
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"

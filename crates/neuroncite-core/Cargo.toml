@@ -1,0 +1,26 @@
+# neuroncite-core: Shared domain types, trait definitions, configuration structures,
+# the document-offset-to-page resolution utility, and error types.
+# This crate has no internal workspace dependencies and serves as the shared type
+# vocabulary imported by every other crate in the workspace.
+
+[package]
+name = "neuroncite-core"
+description = "Shared domain types, traits, and configuration for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

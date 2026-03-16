@@ -1,0 +1,54 @@
+# neuroncite-pdf: Recursive PDF file discovery and page-by-page text extraction
+# with multiple backends (pdf-extract, pdfium) and automatic OCR fallback for
+# image-heavy pages.
+#
+# The default build uses pdf-extract (pure Rust) and requires no external shared
+# libraries. The optional "pdfium" feature enables the pdfium-render backend for
+# multi-column and complex layout extraction. The optional "ocr" feature enables
+# Tesseract-based OCR via CLI subprocess invocation. Both optional features
+# require external binaries at runtime (auto-downloaded on first use).
+
+[package]
+name = "neuroncite-pdf"
+description = "PDF file discovery and text extraction for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Enables the pdfium-render backend for PDFs with multi-column layouts, complex
+# tables, and non-standard font encodings. The pdfium shared library is
+# auto-downloaded on first use if not found next to the executable or on PATH.
+pdfium = ["dep:pdfium-render"]
+# Enables Tesseract-based OCR fallback for image-heavy pages. Tesseract is
+# invoked as a CLI subprocess and auto-downloaded on first use if not found
+# on PATH. The pdfium feature is required for page rendering to raster images
+# before OCR.
+ocr = ["pdfium", "dep:image"]
+
+[dependencies]
+neuroncite-core = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+sha2 = { workspace = true }
+pdf-extract = { workspace = true }
+lopdf = { workspace = true }
+memmap2 = { workspace = true }
+
+# Optional dependencies gated behind feature flags
+pdfium-render = { workspace = true, optional = true }
+image = { workspace = true, optional = true }
+
+# Regex for parsing Tesseract hOCR HTML output to extract word bounding boxes
+regex = { workspace = true }
+
+# Data parallelism for concurrent Tesseract OCR across pages
+rayon = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

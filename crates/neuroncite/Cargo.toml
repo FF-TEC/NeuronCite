@@ -1,0 +1,179 @@
+# neuroncite: The main binary crate and entry point for the NeuronCite application.
+# Parses CLI arguments via clap to determine the execution mode (web, serve, index,
+# search, doctor). When invoked without a subcommand, defaults to the web UI mode
+# which starts the axum server with the embedded SolidJS frontend and opens the
+# default browser. In headless mode, runs the API server or executes a single CLI
+# command and exits.
+#
+# Feature flags for embedding backends are forwarded from this crate through to
+# neuroncite-embed, controlling which ML framework implementation is compiled in.
+
+[package]
+name = "neuroncite"
+description = "NeuronCite: local, privacy-preserving semantic document search engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "neuroncite"
+path = "src/main.rs"
+
+[features]
+default = ["backend-ort", "web", "gui", "mcp", "pdfium", "ocr"]
+# Forward each backend feature flag to neuroncite-embed so the correct ML
+# framework implementation is compiled into the final binary. The backend-ort
+# feature is also forwarded to neuroncite-mcp (when compiled) so the MCP
+# server can access the model catalog and CUDA availability checks.
+backend-ort = ["neuroncite-embed/backend-ort", "neuroncite-api/backend-ort", "neuroncite-mcp?/backend-ort", "neuroncite-web?/backend-ort"]
+
+# The mcp feature compiles in the MCP (Model Context Protocol) server
+# for integration with AI assistants like Claude Code. Building with
+# --no-default-features --features backend-ort produces a binary
+# without MCP support.
+mcp = ["dep:neuroncite-mcp"]
+# The web feature compiles in the browser-based frontend. The SolidJS SPA is
+# embedded into the binary via rust-embed and served by axum. On startup,
+# the default browser is opened to http://localhost:{port}.
+web = ["dep:neuroncite-web"]
+# The gui feature compiles in tao (native window) and wry (WebView) through
+# neuroncite-web. When enabled, the web UI mode opens a native application
+# window instead of launching the default browser. When disabled, the existing
+# opener-based browser launch is used as fallback.
+gui = ["neuroncite-web?/gui"]
+# The pdfium feature enables the pdfium-render backend in neuroncite-pdf
+# for PDFs with multi-column layouts, complex tables, and non-standard
+# font encodings that the default pdf-extract backend cannot parse.
+# Requires the pdfium shared library (pdfium.dll / libpdfium.so) at runtime.
+pdfium = ["neuroncite-pdf/pdfium", "neuroncite-api/pdfium"]
+# The ocr feature enables Tesseract-based OCR fallback in neuroncite-pdf
+# for image-heavy pages that produce no extractable text from either
+# pdf-extract or pdfium backends. Implicitly enables the pdfium feature
+# (page rendering requires pdfium). Tesseract is invoked as a CLI
+# subprocess and auto-downloaded on first use if not found on PATH.
+ocr = ["neuroncite-pdf/ocr", "neuroncite-api/ocr"]
+
+[dependencies]
+# Internal workspace crates
+neuroncite-core = { workspace = true }
+neuroncite-api = { workspace = true }
+neuroncite-web = { workspace = true, optional = true }
+neuroncite-mcp = { workspace = true, optional = true }
+neuroncite-embed = { workspace = true, default-features = false }
+neuroncite-store = { workspace = true }
+neuroncite-pdf = { workspace = true }
+neuroncite-chunk = { workspace = true }
+neuroncite-search = { workspace = true }
+neuroncite-annotate = { workspace = true }
+
+# SQLite connection pooling (needed for CLI indexing and session management)
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+
+# Lock-free atomic pointer swapping for HNSW index hot-reloading
+arc-swap = { workspace = true }
+
+# Error handling at the application boundary
+anyhow = { workspace = true }
+
+# CLI argument parsing with derive macros
+clap = { workspace = true }
+
+# HTTP server framework (used in the serve subcommand for binding and routing)
+axum = { workspace = true }
+
+
+# Async runtime (multi-threaded, drives the API server and background tasks)
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# Structured logging with environment-based level filtering
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# JSON output for CLI subcommands
+serde_json = { workspace = true }
+
+# UUID v4 random token generation for the bearer auth --print-token flag
+uuid = { workspace = true }
+
+# Data parallelism for CPU-bound PDF extraction and chunking
+rayon = { workspace = true }
+
+[dev-dependencies]
+# Temporary directories for integration tests and benchmark setup
+tempfile = { workspace = true }
+
+# HTTP client for server integration tests that make requests to the spawned server
+reqwest = { workspace = true }
+
+# Internal workspace crates used by pipeline integration tests and benchmarks
+# to directly interact with the store, chunk, embed, and search layers.
+# neuroncite-pdf is compiled with both "pdfium" and "ocr" features so that
+# integration tests can exercise the pdfium fallback extraction and Tesseract
+# OCR code paths. The OCR feature uses CLI subprocess invocation (no C library
+# dependencies); Tesseract is auto-downloaded on first use if not on PATH.
+neuroncite-core = { workspace = true }
+neuroncite-store = { workspace = true }
+neuroncite-chunk = { workspace = true }
+neuroncite-pdf = { workspace = true, features = ["pdfium", "ocr"] }
+neuroncite-embed = { workspace = true }
+neuroncite-search = { workspace = true }
+
+# SQLite connection management for in-memory test databases and FTS5 benchmarks
+rusqlite = { workspace = true }
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+
+# Async runtime for server integration tests
+tokio = { workspace = true }
+
+# Cryptographic hashing for content hash verification in regression tests
+sha2 = { workspace = true }
+
+# Data parallelism for real-PDF integration tests
+rayon = { workspace = true }
+
+# Benchmarking framework with HTML report generation
+criterion = { workspace = true }
+
+# Windows resource compiler for embedding the application icon and version
+# metadata into the .exe file. Only used on Windows targets; on other
+# platforms the build script skips the winres step.
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winres = { workspace = true }
+
+[lints]
+workspace = true
+
+# The benchmark crates use Criterion's own main() function via harness = false.
+# When harness = true (the default), the compiler links the libtest harness which
+# provides its own main(). Criterion also generates a main(), causing a duplicate
+# symbol error at link time. Setting harness = false disables the libtest main()
+# so that only Criterion's entry point is linked.
+
+# Benchmark: HNSW nearest neighbor query performance on pre-built index
+[[bench]]
+name = "hnsw_query"
+harness = false
+
+# Benchmark: BM25 keyword search via FTS5 virtual table
+[[bench]]
+name = "bm25_query"
+harness = false
+
+# Benchmark: CPU-bound L2 normalization throughput for embedding vectors
+[[bench]]
+name = "embedding_cpu"
+harness = false
+
+# Benchmark: PDF file discovery and text quality scoring
+[[bench]]
+name = "pdf_extraction"
+harness = false
+
+# Benchmark: HNSW index construction from random vectors
+[[bench]]
+name = "hnsw_construction"
+harness = false

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuroncite"
+version = "0.1.0"
+description = "Python client for the NeuronCite semantic document search API"
+requires-python = ">=3.10"
+license = {text = "AGPL-3.0-only"}
+authors = [
+    {name = "NeuronCite Contributors"},
+]
+readme = "README.md"
+keywords = [
+    "neuroncite",
+    "semantic-search",
+    "pdf",
+    "citation",
+    "embedding",
+    "api-client",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Text Processing :: Indexing",
+    "Typing :: Typed",
+]
+dependencies = ["requests>=2.31.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "responses>=0.23"]
+
+[project.urls]
+Homepage = "https://github.com/neuroncite/neuroncite"
+Repository = "https://github.com/neuroncite/neuroncite"
+Documentation = "https://github.com/neuroncite/neuroncite/tree/main/clients/python#readme"
+Changelog = "https://github.com/neuroncite/neuroncite/blob/main/clients/python/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/neuroncite/neuroncite/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

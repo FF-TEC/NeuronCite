@@ -1,0 +1,133 @@
+# cargo-deny configuration for the NeuronCite workspace.
+# Enforces license compliance, vulnerability scanning, duplicate detection,
+# and source provenance on every commit via the pre-commit hook.
+#
+# Reference: https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# All workspace members are checked with all production features enabled.
+# The OCR feature uses CLI subprocess invocation (no C library dependencies)
+# and is included alongside pdfium for complete dependency coverage.
+all-features = false
+features = ["backend-ort", "web", "mcp", "pdfium", "ocr", "gui"]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# License policy
+# ──────────────────────────────────────────────────────────────────────────────
+[licenses]
+# The project is AGPL-3.0-only licensed. Allow permissive licenses and weak
+# copyleft licenses (MPL-2.0) that are compatible with AGPL redistribution.
+# MPL-2.0 is file-level copyleft and explicitly permits combining with
+# AGPL code (Section 3.3 of the MPL-2.0).
+allow = [
+    "AGPL-3.0-only",
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "ISC",
+    "MPL-2.0",
+    "Unlicense",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "0BSD",
+    "OFL-1.1",
+    "CDLA-Permissive-2.0",
+    # NCSA is the University of Illinois/NCSA Open Source License, an OSI-approved
+    # permissive license similar to BSD-3-Clause. Pulled in transitively by
+    # libfuzzer-sys (via rav1e -> ravif -> image), which is only a build-time
+    # fuzzing harness with no runtime code in the shipping binary.
+    "NCSA",
+]
+# Confidence threshold for license file detection. 0.8 = 80% match required
+# before cargo-deny accepts an inferred license from a LICENSE file.
+confidence-threshold = 0.8
+
+# epaint_default_fonts bundles the Hack and NotoEmoji fonts under the
+# Ubuntu Font License (UFL-1.0), which is not a registered SPDX identifier.
+# The UFL is a permissive font license compatible with MIT redistribution.
+# Grant an exception for this specific crate.
+[[licenses.exceptions]]
+name = "epaint_default_fonts"
+allow = ["LicenseRef-UFL-1.0"]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Security advisories (RustSec)
+# ──────────────────────────────────────────────────────────────────────────────
+[advisories]
+# The advisory database is fetched from https://github.com/RustSec/advisory-db.
+# Advisories listed here are acknowledged and accepted because they come from
+# transitive dependencies that cannot be replaced without forking upstream.
+ignore = [
+    # RUSTSEC-2025-0141: bincode is unmaintained. Transitive dependency from
+    # hnsw_rs (v1.3.3). bincode v1.3.3 is considered feature-complete by its
+    # maintainers and has no known security vulnerabilities.
+    "RUSTSEC-2025-0141",
+
+    # RUSTSEC-2024-0436: paste is unmaintained. Transitive dependency from
+    # multiple upstream crates. The crate is a compile-time proc-macro with
+    # no runtime code and no known security vulnerabilities.
+    "RUSTSEC-2024-0436",
+
+    # RUSTSEC-2025-0057: fxhash is unmaintained. Transitive dependency from
+    # scraper -> selectors -> fxhash. The crate is a simple hash function
+    # wrapper with no known security vulnerabilities. Upstream scraper has
+    # not migrated to rustc-hash yet.
+    "RUSTSEC-2025-0057",
+
+    # RUSTSEC-2025-0119: number_prefix is unmaintained. Transitive dependency
+    # from tokenizers -> indicatif -> number_prefix. The crate is a simple
+    # SI/binary prefix formatter with no security vulnerabilities. Upstream
+    # indicatif has not migrated to an alternative yet.
+    "RUSTSEC-2025-0119",
+
+    # RUSTSEC-2024-0370 through RUSTSEC-2024-0420: GTK3 bindings are
+    # unmaintained (atk, atk-sys, cairo-rs, cairo-sys-rs, gdk, gdk-sys,
+    # gtk, gtk-sys, pango, pango-sys, soup2-sys). Transitive dependencies
+    # from tao v0.34 and wry v0.54 which use gtk3-rs for the Linux
+    # windowing backend. No security vulnerabilities; the advisory only
+    # signals that GTK4 bindings are preferred. Upstream tao/wry have not
+    # yet migrated to gtk4-rs.
+    "RUSTSEC-2024-0370",
+    "RUSTSEC-2024-0411",
+    "RUSTSEC-2024-0412",
+    "RUSTSEC-2024-0413",
+    "RUSTSEC-2024-0414",
+    "RUSTSEC-2024-0415",
+    "RUSTSEC-2024-0416",
+    "RUSTSEC-2024-0417",
+    "RUSTSEC-2024-0418",
+    "RUSTSEC-2024-0419",
+    "RUSTSEC-2024-0420",
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Banned and duplicate crates
+# ──────────────────────────────────────────────────────────────────────────────
+[bans]
+# "warn" on duplicate crate versions rather than "deny", because the ML
+# framework ecosystem (ort) and GUI dependencies (tao, wry) pull in different
+# versions of foundational crates (syn, quote, proc-macro2, windows-sys).
+# Attempting to deny these would make the project unbuildable.
+multiple-versions = "warn"
+# All workspace crates use publish = false and reference each other via
+# path dependencies without explicit version numbers. cargo-deny reports
+# these as wildcard dependencies. Since these crates are never published
+# to crates.io, unversioned path references are correct and expected.
+wildcards = "allow"
+highlight = "all"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Source provenance
+# ──────────────────────────────────────────────────────────────────────────────
+[sources]
+# All dependencies must originate from crates.io. Git dependencies from
+# unknown repositories are rejected.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

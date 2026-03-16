@@ -1,0 +1,57 @@
+# neuroncite-html: HTML web scraping, parsing, section splitting, and crawling
+# for the NeuronCite workspace. Fetches web pages via HTTP GET, caches raw HTML
+# to disk, extracts visible text and metadata from HTML documents, splits content
+# into heading-based sections (H1/H2), and provides configurable website crawling
+# with link-following, same-domain filtering, URL pattern matching, and sitemap
+# support. The extracted sections integrate with the existing chunking/embedding
+# pipeline via PageText conversion.
+
+[package]
+name = "neuroncite-html"
+description = "HTML web scraping, parsing, section splitting, and crawling for the NeuronCite workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Internal workspace crate for shared types (PageText, ExtractionBackend, SourceType)
+neuroncite-core = { workspace = true }
+
+# HTTP client for fetching web pages with TLS, compression, and cookie support
+reqwest = { workspace = true }
+
+# HTML5-compliant parser built on html5ever, provides CSS selector-based DOM queries
+scraper = { workspace = true }
+
+# URL parsing, resolution, and normalization
+url = { workspace = true }
+
+# Async runtime for HTTP requests, crawl delays, and concurrent operations
+tokio = { workspace = true }
+
+# SHA-256 hashing for content deduplication and cache filename generation
+sha2 = { workspace = true }
+
+# Serialization for CrawlConfig, WebMetadata, and JSON output
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Structured logging for fetch/parse/crawl operations
+tracing = { workspace = true }
+
+# Typed error variants for HTTP, parse, crawl, and I/O failures
+thiserror = { workspace = true }
+
+# Regular expressions for URL pattern matching during crawl filtering
+regex = { workspace = true }
+
+# Stream combinators for streaming HTTP response bodies to disk
+futures-util = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

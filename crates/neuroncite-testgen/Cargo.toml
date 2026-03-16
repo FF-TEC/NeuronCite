@@ -1,0 +1,26 @@
+# Binary crate that generates synthetic test PDFs for the NeuronCite
+# integration test suite. Each generated PDF triggers a specific failure
+# mode in the pdf-extract crate (cross-reference corruption, CID-range
+# font table panic, Type1 font encoding panic) while remaining parseable
+# by the pdfium fallback backend.
+#
+# Run: cargo run -p neuroncite-testgen
+# Output: tests/PDFs/ocr/{cross-reference-error,cid-range-panic,type1-font-panic}/
+
+[package]
+name = "neuroncite-testgen"
+description = "Generates synthetic test PDFs for the NeuronCite integration test suite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "neuroncite-testgen"
+path = "src/main.rs"
+
+[dependencies]
+lopdf = { workspace = true }
+
+[lints]
+workspace = true
