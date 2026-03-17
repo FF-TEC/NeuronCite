@@ -944,12 +944,18 @@ fn run_web(config_path: Option<PathBuf>, port: u16, bind: String, log_level: &Lo
     // --- GUI path: tao event loop on main thread, tokio in background thread ---
     #[cfg(feature = "gui")]
     {
-        // Pre-flight: verify that the native GUI can be created on this
-        // system (e.g. libwebkit2gtk is installed on Linux). If the check
-        // fails, fall back to the browser-based flow instead of consuming
-        // the shutdown channel in run_gui_with_splash (which would cause
-        // the server to shut down immediately on GUI failure).
-        if let Err(reason) = neuroncite_web::native_window::preflight_gui_check() {
+        // On Linux, skip the native GUI entirely and use the browser.
+        // wry 0.54 + tao 0.34 cannot reliably render a WebView under
+        // Wayland (blank white screen, broken events). The browser
+        // provides a flawless experience with zero extra dependencies.
+        // macOS and Windows continue to use the native window.
+        #[cfg(target_os = "linux")]
+        let preflight: Result<(), String> =
+            Err("Linux: using browser for best compatibility".to_string());
+        #[cfg(not(target_os = "linux"))]
+        let preflight = neuroncite_web::native_window::preflight_gui_check();
+
+        if let Err(reason) = preflight {
             // --- Browser fallback path (GUI prerequisites missing) ---
             tracing::warn!(reason = %reason, "native GUI unavailable, falling back to browser");
             eprintln!("WARN: {reason}");
@@ -1025,7 +1031,12 @@ fn run_web(config_path: Option<PathBuf>, port: u16, bind: String, log_level: &Lo
                             .expect("TCP listener address available after successful bind");
                         tracing::info!(%addr, "NeuronCite web server listening");
 
-                        // No native dialogs in fallback mode (no tao event loop).
+                        // On Linux, rfd uses xdg-desktop-portal/zenity and does NOT
+                        // need a tao event loop, so native dialogs work fine in
+                        // browser-fallback mode. On macOS, rfd needs GCD via tao.
+                        #[cfg(target_os = "linux")]
+                        let web_state = neuroncite_web::WebState::with_native_dialogs(state, log_tx, true);
+                        #[cfg(not(target_os = "linux"))]
                         let web_state = neuroncite_web::WebState::new(state, log_tx);
                         let app = neuroncite_web::build_web_router(
                             web_state.app_state.clone(),

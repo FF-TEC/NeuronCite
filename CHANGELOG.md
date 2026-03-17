@@ -19,9 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Linux Wayland compatibility:** auto-set `GDK_BACKEND=x11` under Wayland,
-  added `preflight_gui_check()` with `libwebkit2gtk-4.1` dlopen verification,
-  and graceful browser fallback when the native WebView cannot be created
+- **Linux GUI → browser mode:** skip the native wry/tao WebView on Linux
+  entirely (wry 0.54 + tao 0.34 cannot reliably render under Wayland) and use
+  the browser-based UI with native file dialogs via xdg-desktop-portal/zenity;
+  macOS and Windows continue to use the native window
 - **Stale counts and inaccurate claims** across docs and code: corrected tab
   count (6 → 7), crate count (15 → 16), CLI command count (11 → 10), Python
   client URLs, license wording, single-binary qualification, Tesseract
