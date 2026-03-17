@@ -198,7 +198,7 @@ mod tests {
     fn t_web_upd_007_same_version_not_update() {
         let current = semver::Version::parse("0.1.0").unwrap();
         let latest = parse_version_tag("v0.1.0").unwrap();
-        assert!(!(latest > current));
+        assert!(latest <= current);
     }
 
     #[test]
