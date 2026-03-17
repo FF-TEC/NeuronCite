@@ -341,11 +341,12 @@ neuroncite search \
 Executes a single search query against an existing session. Results are printed
 as JSON (default) or plain text (`--format text`).
 
-### MCP Server (Claude Code)
+### MCP Server (Claude Code & Claude Desktop App)
 
 ```bash
-neuroncite mcp install   # registers in Claude Code settings
-neuroncite mcp serve     # starts stdio JSON-RPC server
+neuroncite mcp install                        # registers in Claude Code settings (default)
+neuroncite mcp install --target claude-desktop # registers in Claude Desktop App settings
+neuroncite mcp serve                          # starts stdio JSON-RPC server
 ```
 
 ### Citation Verification (CLI)
@@ -377,7 +378,7 @@ PDFs.
 | `neuroncite sessions` | List index sessions in a database |
 | `neuroncite export` | Export results as Markdown, BibTeX, CSL-JSON, RIS, or plain text |
 | `neuroncite models list\|download` | Manage embedding models |
-| `neuroncite mcp install\|serve` | Register and run MCP server |
+| `neuroncite mcp install\|serve` | Register and run MCP server (Claude Code / Desktop App) |
 | `neuroncite version` | Print version, build features, and Git commit hash |
 
 ---

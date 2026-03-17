@@ -59,10 +59,10 @@ pub fn web_routes(state: Arc<WebState>) -> Router {
         // Model-specific diagnostics and repair
         .route("/doctor/models", get(model_doctor::model_diagnostics))
         .route("/doctor/repair-model", post(model_doctor::repair_model))
-        // MCP server registration
+        // MCP server registration (dual-target: claude-code and claude-desktop)
         .route("/mcp/status", get(mcp::mcp_status))
-        .route("/mcp/install", post(mcp::mcp_install))
-        .route("/mcp/uninstall", post(mcp::mcp_uninstall))
+        .route("/mcp/{target}/install", post(mcp::mcp_install))
+        .route("/mcp/{target}/uninstall", post(mcp::mcp_uninstall))
         // Ollama LLM proxy (connection check, model listing, management)
         .route("/ollama/status", get(ollama::ollama_status))
         .route("/ollama/models", get(ollama::list_ollama_models))

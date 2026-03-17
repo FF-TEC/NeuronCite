@@ -243,7 +243,7 @@ enum Command {
 
     /// MCP (Model Context Protocol) server for integration with AI assistants.
     /// Provides subcommands to start the stdio server, register/unregister
-    /// with Claude Code, and check registration status.
+    /// with Claude Code or Claude Desktop App, and check registration status.
     #[cfg(feature = "mcp")]
     Mcp {
         #[command(subcommand)]
@@ -252,12 +252,13 @@ enum Command {
 }
 
 /// Subcommands for the `mcp` command group. Manages the MCP stdio server
-/// and its registration in Claude Code's configuration file.
+/// and its registration in Claude Code and Claude Desktop App configuration files.
 #[cfg(feature = "mcp")]
 #[derive(Subcommand)]
 enum McpCommand {
-    /// Start the MCP server in stdio mode. Claude Code spawns this as a child
-    /// process and communicates via stdin/stdout JSON-RPC 2.0 messages.
+    /// Start the MCP server in stdio mode. The MCP client (Claude Code or
+    /// Claude Desktop App) spawns this as a child process and communicates
+    /// via stdin/stdout JSON-RPC 2.0 messages.
     Serve {
         /// HuggingFace model identifier to load at startup. Overrides the
         /// config file's `default_model` setting. The model must match the
@@ -267,15 +268,28 @@ enum McpCommand {
         model: Option<String>,
     },
 
-    /// Register the NeuronCite MCP server in Claude Code's global settings
-    /// file (~/.claude/settings.json) under the `mcpServers` key.
-    Install,
+    /// Register the NeuronCite MCP server in the specified client's config.
+    /// Defaults to Claude Code if no target is given.
+    Install {
+        /// Target client: "claude-code" or "claude-desktop".
+        #[arg(long, default_value = "claude-code")]
+        target: String,
+    },
 
-    /// Remove the NeuronCite MCP server entry from Claude Code's settings.
-    Uninstall,
+    /// Remove the NeuronCite MCP server entry from the specified client's config.
+    Uninstall {
+        /// Target client: "claude-code" or "claude-desktop".
+        #[arg(long, default_value = "claude-code")]
+        target: String,
+    },
 
-    /// Check the current MCP registration status and display the configuration.
-    Status,
+    /// Check the current MCP registration status. Shows all targets unless
+    /// a specific one is given.
+    Status {
+        /// Target client: "claude-code" or "claude-desktop". Omit to show all.
+        #[arg(long)]
+        target: Option<String>,
+    },
 }
 
 /// Subcommands for the `models` command group. Each subcommand outputs
@@ -2862,9 +2876,9 @@ fn run_version(format: OutputFormat) -> i32 {
 fn run_mcp(config_path: Option<PathBuf>, action: McpCommand) -> i32 {
     match action {
         McpCommand::Serve { model } => run_mcp_serve(config_path, model),
-        McpCommand::Install => run_mcp_install(),
-        McpCommand::Uninstall => run_mcp_uninstall(),
-        McpCommand::Status => run_mcp_status(),
+        McpCommand::Install { target } => run_mcp_install(&target),
+        McpCommand::Uninstall { target } => run_mcp_uninstall(&target),
+        McpCommand::Status { target } => run_mcp_status(target.as_deref()),
     }
 }
 
@@ -3041,11 +3055,19 @@ fn run_mcp_serve(config_path: Option<PathBuf>, model_override: Option<String>) -
 
 /// Registers the NeuronCite MCP server in Claude Code's global settings file.
 #[cfg(feature = "mcp")]
-fn run_mcp_install() -> i32 {
-    match neuroncite_mcp::registration::install(None) {
+fn run_mcp_install(target_str: &str) -> i32 {
+    let target = match neuroncite_mcp::McpTarget::from_cli_str(target_str) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln_error("mcp_install", &e);
+            return 1;
+        }
+    };
+    match neuroncite_mcp::registration::install(None, target) {
         Ok(msg) => {
             let output = serde_json::json!({
                 "status": "installed",
+                "target": target.cli_name(),
                 "message": msg,
             });
             println!(
@@ -3061,13 +3083,21 @@ fn run_mcp_install() -> i32 {
     }
 }
 
-/// Removes the NeuronCite MCP server entry from Claude Code's global settings.
+/// Removes the NeuronCite MCP server entry from the specified client's config.
 #[cfg(feature = "mcp")]
-fn run_mcp_uninstall() -> i32 {
-    match neuroncite_mcp::registration::uninstall() {
+fn run_mcp_uninstall(target_str: &str) -> i32 {
+    let target = match neuroncite_mcp::McpTarget::from_cli_str(target_str) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln_error("mcp_uninstall", &e);
+            return 1;
+        }
+    };
+    match neuroncite_mcp::registration::uninstall(target) {
         Ok(msg) => {
             let output = serde_json::json!({
                 "status": "uninstalled",
+                "target": target.cli_name(),
                 "message": msg,
             });
             println!(
@@ -3083,16 +3113,42 @@ fn run_mcp_uninstall() -> i32 {
     }
 }
 
-/// Displays the current MCP registration status.
+/// Displays the current MCP registration status. When `target_str` is `None`,
+/// shows status for all targets.
 #[cfg(feature = "mcp")]
-fn run_mcp_status() -> i32 {
-    let status = neuroncite_mcp::registration::check_status();
-    let output = serde_json::json!({
-        "registered": status.registered,
-        "exe_path": status.exe_path,
-        "args": status.args,
-        "config_path": status.config_path,
-    });
+fn run_mcp_status(target_str: Option<&str>) -> i32 {
+    let targets: Vec<neuroncite_mcp::McpTarget> = match target_str {
+        Some(s) => match neuroncite_mcp::McpTarget::from_cli_str(s) {
+            Ok(t) => vec![t],
+            Err(e) => {
+                eprintln_error("mcp_status", &e);
+                return 1;
+            }
+        },
+        None => neuroncite_mcp::McpTarget::all().to_vec(),
+    };
+
+    let results: Vec<serde_json::Value> = targets
+        .iter()
+        .map(|t| {
+            let status = neuroncite_mcp::registration::check_status(*t);
+            serde_json::json!({
+                "target": t.cli_name(),
+                "display_name": t.display_name(),
+                "registered": status.registered,
+                "exe_path": status.exe_path,
+                "args": status.args,
+                "config_path": status.config_path,
+            })
+        })
+        .collect();
+
+    let output = if results.len() == 1 {
+        results.into_iter().next().unwrap()
+    } else {
+        serde_json::json!({ "targets": results })
+    };
+
     println!(
         "{}",
         serde_json::to_string_pretty(&output).unwrap_or_default()

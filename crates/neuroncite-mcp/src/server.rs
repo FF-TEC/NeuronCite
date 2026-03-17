@@ -41,12 +41,11 @@ const SERVER_NAME: &str = "neuroncite";
 const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// MCP protocol version reported in the initialize handshake response.
-/// Derived from the workspace crate version in Cargo.toml via the
-/// `CARGO_PKG_VERSION` environment variable at compile time. This ensures
-/// the protocol version stays in sync with the crate release version
-/// without manual updates. Re-exported from the crate root
-/// (`neuroncite_mcp::PROTOCOL_VERSION`).
-pub const PROTOCOL_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// This must match the MCP specification version that the server implements,
+/// not the crate version. Claude Code and other MCP clients use this field
+/// to verify protocol compatibility during the handshake.
+/// Re-exported from the crate root (`neuroncite_mcp::PROTOCOL_VERSION`).
+pub const PROTOCOL_VERSION: &str = "2024-11-05";
 
 /// Runs the MCP server loop on the given reader/writer pair.
 ///

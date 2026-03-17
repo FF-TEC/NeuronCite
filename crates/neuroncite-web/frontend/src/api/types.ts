@@ -977,17 +977,29 @@ export interface DoctorInstallResponse {
 // MCP Server (GET /api/v1/web/mcp/status)
 // ---------------------------------------------------------------------------
 
+/** Registration status for a single MCP target (Claude Code or Claude Desktop App). */
+export interface McpTargetStatus {
+  /** True when mcpServers.neuroncite is present in the target's config file. */
+  registered: boolean;
+  /** Filesystem path to the config file for this target. */
+  config_path: string;
+}
+
 /** MCP registration status response from GET /api/v1/web/mcp/status.
- *  Reports whether the NeuronCite MCP server is registered in the
- *  Claude Code configuration file (~/.claude.json mcpServers key).
- *  Field names match the Rust McpStatusResponse struct in
+ *  Reports registration status for both Claude Code and Claude Desktop App
+ *  independently. Field names match the Rust McpStatusResponse struct in
  *  crates/neuroncite-web/src/handlers/mcp.rs exactly. */
 export interface McpStatusResponse {
-  /** True when mcpServers.neuroncite is present in ~/.claude.json. */
-  registered: boolean;
+  /** Registration status for Claude Code (~/.claude.json). */
+  claude_code: McpTargetStatus;
+  /** Registration status for Claude Desktop App (platform-specific path). */
+  claude_desktop: McpTargetStatus;
   /** The binary's own CARGO_PKG_VERSION string. */
   server_version: string;
 }
+
+/** Identifies which MCP client configuration to target. */
+export type McpTarget = "claude-code" | "claude-desktop";
 
 // ---------------------------------------------------------------------------
 // Setup complete (POST /api/v1/web/setup/complete)

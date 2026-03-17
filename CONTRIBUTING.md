@@ -61,7 +61,7 @@ The binary crate has six feature flags, all enabled by default:
 | `backend-ort` | ONNX Runtime embedding backend (forwarded through the crate chain) |
 | `web` | SolidJS frontend embedded via rust-embed |
 | `gui` | Native window via tao/wry (requires `web`) |
-| `mcp` | Model Context Protocol server for Claude Code |
+| `mcp` | Model Context Protocol server for Claude Code and Claude Desktop App |
 | `pdfium` | PDFium backend for multi-column PDF extraction |
 | `ocr` | Tesseract OCR fallback (requires `pdfium`) |
 

@@ -50,4 +50,5 @@ pub mod transport;
 /// Re-export of the MCP protocol version constant from `server::PROTOCOL_VERSION`.
 /// Provides a single, crate-level access point for the protocol version string
 /// used in initialize handshake responses.
+pub use registration::McpTarget;
 pub use server::PROTOCOL_VERSION;

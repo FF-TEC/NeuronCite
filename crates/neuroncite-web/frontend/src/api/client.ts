@@ -46,6 +46,7 @@ import type {
   LoadRerankerRequest,
   LoadRerankerResponse,
   McpStatusResponse,
+  McpTarget,
   ModelActivateRequest,
   ModelActivateResponse,
   ModelCatalogResponse,
@@ -407,13 +408,15 @@ export const api = {
     post<DoctorInstallResponse>("/web/doctor/install", body, LONG_TIMEOUT_MS),
 
   // ---- MCP Server (registration status and install/uninstall) ----
-  /** Checks the MCP server registration status in the Claude Desktop config. */
+  /** Checks the MCP server registration status for both Claude Code and
+   *  Claude Desktop App. */
   mcpStatus: () => get<McpStatusResponse>("/web/mcp/status"),
 
-  /** Installs or uninstalls the MCP server registration. The action parameter
-   *  is "install" or "uninstall", appended as the URL path segment. */
-  mcpAction: (action: "install" | "uninstall") =>
-    post<{ status: string }>(`/web/mcp/${action}`),
+  /** Installs or uninstalls the MCP server registration for a specific target.
+   *  The target is "claude-code" or "claude-desktop", the action is "install"
+   *  or "uninstall". */
+  mcpAction: (action: "install" | "uninstall", target: McpTarget) =>
+    post<{ status: string }>(`/web/mcp/${target}/${action}`),
 
   // ---- Ollama (local LLM proxy and model management) ----
   ollamaStatus: (url: string) =>

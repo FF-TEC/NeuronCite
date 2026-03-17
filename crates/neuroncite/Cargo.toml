@@ -29,7 +29,7 @@ default = ["backend-ort", "web", "gui", "mcp", "pdfium", "ocr"]
 backend-ort = ["neuroncite-embed/backend-ort", "neuroncite-api/backend-ort", "neuroncite-mcp?/backend-ort", "neuroncite-web?/backend-ort"]
 
 # The mcp feature compiles in the MCP (Model Context Protocol) server
-# for integration with AI assistants like Claude Code. Building with
+# for integration with Claude Code and Claude Desktop App. Building with
 # --no-default-features --features backend-ort produces a binary
 # without MCP support.
 mcp = ["dep:neuroncite-mcp"]
