@@ -30,7 +30,7 @@ members = [
 # here updates all 16 crates at once; the frontend package.json must be bumped
 # manually (it is private and never published to npm).
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/FF-TEC/NeuronCite"

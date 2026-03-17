@@ -5,6 +5,42 @@ All notable changes to NeuronCite are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-03-17
+
+### Added
+
+- **MCP dual-target support:** independent registration for both Claude Code
+  (`~/.claude.json`) and Claude Desktop App (`claude_desktop_config.json`) with
+  `--target` CLI flag, per-target web UI status cards, and install/uninstall
+  controls
+- **Check for Updates button** in the Settings > About panel: queries the GitHub
+  Releases API, compares semver versions, and displays a link to the latest
+  release if an update is available
+
+### Fixed
+
+- **Linux Wayland compatibility:** auto-set `GDK_BACKEND=x11` under Wayland,
+  added `preflight_gui_check()` with `libwebkit2gtk-4.1` dlopen verification,
+  and graceful browser fallback when the native WebView cannot be created
+- **Stale counts and inaccurate claims** across docs and code: corrected tab
+  count (6 → 7), crate count (15 → 16), CLI command count (11 → 10), Python
+  client URLs, license wording, single-binary qualification, Tesseract
+  auto-download claims, GUI/browser behavior, MCP tool descriptions, Linux
+  runtime dependency claims, pip install instructions, and pdfium comment
+- **Release notes Docker commands:** lowercased `github.repository_owner` in
+  release body to prevent OCI "invalid reference format" errors
+- **Duplicate MCP test IDs:** renumbered 11 colliding IDs (T-MCP-030..040 →
+  T-MCP-125..135), updated `t_web_016_mcp_status_returns_fields` to match the
+  current dual-target `McpStatusResponse`, and documented `handlers/update.rs`
+  in the architecture module table
+- **MCP protocol version:** report spec version `2024-11-05` instead of crate
+  version in initialize handshake
+
+### Changed
+
+- Bump `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` from
+  8.57.0 to 8.57.1
+
 ## [0.1.0] - 2026-03-14
 
 Initial release.
@@ -43,4 +79,5 @@ Initial release.
 - Pre-commit hooks for formatting, linting, license auditing, and architecture
   validation
 
+[0.1.1]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/FF-TEC/NeuronCite/releases/tag/v0.1.0

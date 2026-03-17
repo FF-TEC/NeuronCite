@@ -3154,7 +3154,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -3190,7 +3190,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-annotate"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "csv",
@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "axum",
@@ -3252,7 +3252,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-chunk"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "neuroncite-core",
  "proptest",
@@ -3266,7 +3266,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-citation"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "csv",
@@ -3284,7 +3284,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -3297,7 +3297,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-embed"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "half",
  "ndarray",
@@ -3313,7 +3313,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-html"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "futures-util",
  "neuroncite-core",
@@ -3332,7 +3332,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-llm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "futures-util",
  "reqwest",
@@ -3345,7 +3345,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -3372,7 +3372,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-pdf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "lopdf 0.39.0",
@@ -3390,7 +3390,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-pipeline"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "neuroncite-annotate",
@@ -3415,7 +3415,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-search"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hnsw_rs",
  "neuroncite-core",
@@ -3429,7 +3429,7 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-store"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "hnsw_rs",
@@ -3449,14 +3449,14 @@ dependencies = [
 
 [[package]]
 name = "neuroncite-testgen"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "lopdf 0.39.0",
 ]
 
 [[package]]
 name = "neuroncite-web"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "axum-extra",

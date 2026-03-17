@@ -3,7 +3,16 @@
 All changes to the NeuronCite Python client are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## 0.1.0 (unreleased)
+## 0.1.1 - 2026-03-17
+
+### Fixed
+
+- Corrected project URLs from `neuroncite/neuroncite` to `FF-TEC/NeuronCite`
+  in `pyproject.toml`.
+- Added from-source install alternative to README since PyPI package is not yet
+  published.
+
+## 0.1.0 - 2026-03-14
 
 ### Added
 
