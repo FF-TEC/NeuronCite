@@ -85,6 +85,13 @@ r2d2_sqlite = { workspace = true }
 # Used by the /browse/native endpoint to open the platform folder picker.
 rfd = { workspace = true }
 
+# HTTP client for the update check handler (GitHub Releases API).
+# Already a workspace dependency with json, rustls-tls, gzip features.
+reqwest = { workspace = true }
+
+# Semantic versioning parser for comparing current vs latest release version.
+semver = { workspace = true }
+
 # Native OS window management -- optional, compiled only with the gui feature.
 # Creates the application window that hosts the embedded WebView.
 tao = { workspace = true, optional = true }

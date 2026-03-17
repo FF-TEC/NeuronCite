@@ -1022,3 +1022,18 @@ export interface NativeBrowseResponse {
   path: string;
   selected: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Update check (GET /api/v1/web/check-update)
+// ---------------------------------------------------------------------------
+
+/** Response from GET /api/v1/web/check-update. Reports whether a newer
+ *  version is available on GitHub and provides a link to the release page.
+ *  This is not an auto-updater -- the user must download and install the
+ *  new version manually. */
+export interface UpdateCheckResponse {
+  current_version: string;
+  latest_version: string;
+  update_available: boolean;
+  release_url: string;
+}

@@ -29,6 +29,7 @@ pub mod model_doctor;
 pub mod models;
 pub mod ollama;
 pub mod setup;
+pub mod update;
 
 use std::sync::Arc;
 
@@ -74,5 +75,7 @@ pub fn web_routes(state: Arc<WebState>) -> Router {
         // First-run setup dialog state (marker file presence check and write)
         .route("/setup/status", get(setup::get_setup_status))
         .route("/setup/complete", post(setup::mark_setup_complete))
+        // Update check (GitHub release version comparison)
+        .route("/check-update", get(update::check_update))
         .with_state(state)
 }

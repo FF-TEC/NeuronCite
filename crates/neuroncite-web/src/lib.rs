@@ -1331,4 +1331,27 @@ mod tests {
             );
         }
     }
+
+    // -----------------------------------------------------------------------
+    // T-WEB-037: GET /web/check-update route is registered and responds
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn t_web_037_check_update_route_exists() {
+        let (app, _, _) = build_test_app();
+        let req = Request::builder()
+            .uri("/api/v1/web/check-update")
+            .body(Body::empty())
+            .unwrap();
+        let resp = send(app, req).await;
+        // The handler makes an outbound HTTP call to GitHub, which may fail
+        // in CI/test environments. We accept either 200 (GitHub reachable)
+        // or 502 (outbound call failed). The key assertion is that the route
+        // exists and is not 404 or 405.
+        let status = resp.status().as_u16();
+        assert!(
+            status == 200 || status == 502,
+            "expected 200 or 502, got {status}"
+        );
+    }
 }

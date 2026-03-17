@@ -261,6 +261,9 @@ ouroboros = "0.18"
 # Property-based testing framework for generative test strategies
 proptest = "1"
 
+# Semantic versioning parser and comparator for update checks
+semver = "1"
+
 # Windows resource compiler for embedding application icon, version info,
 # and manifest into the Windows executable (.exe) at link time.
 winres = "0.1"

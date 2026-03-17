@@ -74,6 +74,7 @@ import type {
   SessionListResponse,
   SetupCompleteResponse,
   SetupStatusResponse,
+  UpdateCheckResponse,
 } from "./types";
 
 /** Base path for all API requests. */
@@ -374,6 +375,12 @@ export const api = {
   /** Writes the .setup_complete marker file to suppress the welcome dialog
    *  on subsequent launches. */
   setupComplete: () => post<SetupCompleteResponse>("/web/setup/complete"),
+
+  // ---- Update check ----
+  /** Checks the GitHub Releases API for a newer version of NeuronCite.
+   *  Returns the current version, latest version, and a release page URL.
+   *  This is not an auto-updater -- the user must download manually. */
+  checkUpdate: () => get<UpdateCheckResponse>("/web/check-update"),
 
   // ---- Model catalog and management ----
   /** Fetches the full model catalog including GPU detection, embedding models,
