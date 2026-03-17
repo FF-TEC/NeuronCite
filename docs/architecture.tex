@@ -1432,6 +1432,13 @@ imported by every other crate.
                       \texttt{is\_first\_run} flag with the data directory
                       path. \texttt{mark\_setup\_complete} creates the marker
                       file to suppress the welcome dialog on future launches. \\
+    src/handlers/\allowbreak update.rs & public & Update check handler.
+                      Queries the GitHub Releases API to determine whether a
+                      newer version of NeuronCite is available. Returns the
+                      current version, latest version, an
+                      \texttt{update\_available} flag, and a link to the
+                      GitHub release page. Does not download or install
+                      updates. \\
     src/middleware.rs & public & Security response header middleware for the
                       web router. Applies \texttt{X-Content-Type-Options:~nosniff},
                       \texttt{X-Frame-Options:~DENY}, and

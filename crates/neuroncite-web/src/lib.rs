@@ -848,20 +848,19 @@ mod tests {
         let resp = send(app, req).await;
         assert_eq!(resp.status(), StatusCode::OK);
         let json = body_json(resp).await;
-        // McpStatusResponse now exposes only `registered` (bool) and `server_version` (string).
-        // File paths such as exe_path and config_path were removed to prevent server-side
-        // path disclosure to browser-accessible endpoints.
+        // McpStatusResponse returns per-target status for Claude Code and Claude Desktop,
+        // each with `registered` (bool) and `config_path` (string), plus `server_version`.
         assert!(
-            json["registered"].is_boolean(),
-            "registered must be a boolean in mcp status response"
+            json["claude_code"]["registered"].is_boolean(),
+            "claude_code.registered must be a boolean in mcp status response"
+        );
+        assert!(
+            json["claude_desktop"]["registered"].is_boolean(),
+            "claude_desktop.registered must be a boolean in mcp status response"
         );
         assert!(
             json["server_version"].is_string(),
             "server_version must be a string in mcp status response"
-        );
-        assert!(
-            !json.as_object().unwrap().contains_key("config_path"),
-            "config_path must not be present in mcp status response (path disclosure)"
         );
     }
 

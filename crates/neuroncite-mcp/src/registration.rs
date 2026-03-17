@@ -442,10 +442,10 @@ mod tests {
         }
     }
 
-    /// T-MCP-030: config_file_path returns a path ending with
+    /// T-MCP-125: config_file_path returns a path ending with
     /// `claude_desktop_config.json` for the Claude Desktop target.
     #[test]
-    fn t_mcp_030_desktop_config_file_path_has_correct_name() {
+    fn t_mcp_125_desktop_config_file_path_has_correct_name() {
         if let Some(path) = McpTarget::ClaudeDesktop.config_file_path() {
             assert!(
                 path.ends_with("claude_desktop_config.json"),
@@ -455,10 +455,10 @@ mod tests {
         }
     }
 
-    /// T-MCP-031: McpTarget::from_cli_str parses valid target strings and
+    /// T-MCP-126: McpTarget::from_cli_str parses valid target strings and
     /// rejects unknown ones.
     #[test]
-    fn t_mcp_031_from_cli_str_parsing() {
+    fn t_mcp_126_from_cli_str_parsing() {
         assert_eq!(
             McpTarget::from_cli_str("claude-code").unwrap(),
             McpTarget::ClaudeCode
@@ -470,18 +470,18 @@ mod tests {
         assert!(McpTarget::from_cli_str("unknown").is_err());
     }
 
-    /// T-MCP-032: McpTarget::all returns both targets.
+    /// T-MCP-127: McpTarget::all returns both targets.
     #[test]
-    fn t_mcp_032_all_targets() {
+    fn t_mcp_127_all_targets() {
         let targets = McpTarget::all();
         assert_eq!(targets.len(), 2);
         assert_eq!(targets[0], McpTarget::ClaudeCode);
         assert_eq!(targets[1], McpTarget::ClaudeDesktop);
     }
 
-    /// T-MCP-033: cli_name round-trips through from_cli_str for all targets.
+    /// T-MCP-128: cli_name round-trips through from_cli_str for all targets.
     #[test]
-    fn t_mcp_033_cli_name_round_trip() {
+    fn t_mcp_128_cli_name_round_trip() {
         for target in McpTarget::all() {
             let name = target.cli_name();
             let parsed = McpTarget::from_cli_str(name).unwrap();
@@ -489,9 +489,9 @@ mod tests {
         }
     }
 
-    /// T-MCP-034: display_name returns non-empty human-readable names.
+    /// T-MCP-129: display_name returns non-empty human-readable names.
     #[test]
-    fn t_mcp_034_display_name_non_empty() {
+    fn t_mcp_129_display_name_non_empty() {
         for target in McpTarget::all() {
             let name = target.display_name();
             assert!(!name.is_empty(), "display_name must not be empty");
@@ -500,10 +500,10 @@ mod tests {
         }
     }
 
-    /// T-MCP-035: install_at writes the correct mcpServers entry and
+    /// T-MCP-130: install_at writes the correct mcpServers entry and
     /// uninstall_at removes it again.
     #[test]
-    fn t_mcp_035_install_uninstall_round_trip() {
+    fn t_mcp_130_install_uninstall_round_trip() {
         let dir = tempfile::tempdir().expect("tempdir");
         let fake_exe = dir.path().join("neuroncite");
         std::fs::write(&fake_exe, "fake").expect("write fake exe");
@@ -551,9 +551,9 @@ mod tests {
         );
     }
 
-    /// T-MCP-036: install_at creates parent directories if they do not exist.
+    /// T-MCP-131: install_at creates parent directories if they do not exist.
     #[test]
-    fn t_mcp_036_install_creates_parent_dirs() {
+    fn t_mcp_131_install_creates_parent_dirs() {
         let dir = tempfile::tempdir().expect("tempdir");
         let fake_exe = dir.path().join("neuroncite");
         std::fs::write(&fake_exe, "fake").expect("write fake exe");
@@ -579,9 +579,9 @@ mod tests {
         assert_eq!(parsed["mcpServers"]["neuroncite"]["type"], "stdio");
     }
 
-    /// T-MCP-037: install preserves existing keys in the config file.
+    /// T-MCP-132: install preserves existing keys in the config file.
     #[test]
-    fn t_mcp_037_install_preserves_existing_keys() {
+    fn t_mcp_132_install_preserves_existing_keys() {
         let dir = tempfile::tempdir().expect("tempdir");
         let fake_exe = dir.path().join("neuroncite");
         std::fs::write(&fake_exe, "fake").expect("write fake exe");
@@ -615,9 +615,9 @@ mod tests {
         assert_eq!(parsed["mcpServers"]["neuroncite"]["type"], "stdio");
     }
 
-    /// T-MCP-038: uninstall is a no-op when config file does not exist.
+    /// T-MCP-133: uninstall is a no-op when config file does not exist.
     #[test]
-    fn t_mcp_038_uninstall_noop_when_no_config() {
+    fn t_mcp_133_uninstall_noop_when_no_config() {
         let dir = tempfile::tempdir().expect("tempdir");
         let config_file = dir.path().join("nonexistent.json");
 
@@ -629,10 +629,10 @@ mod tests {
         assert!(!config_file.exists(), "file should not be created");
     }
 
-    /// T-MCP-039: check_status_at returns correct config_path when the
+    /// T-MCP-134: check_status_at returns correct config_path when the
     /// file does not exist.
     #[test]
-    fn t_mcp_039_check_status_returns_config_path_when_missing() {
+    fn t_mcp_134_check_status_returns_config_path_when_missing() {
         let dir = tempfile::tempdir().expect("tempdir");
         let config_file = dir.path().join("nonexistent.json");
 
@@ -648,10 +648,10 @@ mod tests {
         );
     }
 
-    /// T-MCP-040: install and uninstall on separate config files are
+    /// T-MCP-135: install and uninstall on separate config files are
     /// independent -- installing in one does not affect the other.
     #[test]
-    fn t_mcp_040_targets_are_independent() {
+    fn t_mcp_135_targets_are_independent() {
         let dir = tempfile::tempdir().expect("tempdir");
         let fake_exe = dir.path().join("neuroncite");
         std::fs::write(&fake_exe, "fake").expect("write fake exe");
