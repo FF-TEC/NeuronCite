@@ -143,6 +143,10 @@ objc2-foundation = { version = "0.3", optional = true, features = ["NSData", "NS
 # runners that do not install the libgtk-3-dev headers.
 gtk = { version = "0.18", optional = true }
 cairo-rs = { version = "0.18", optional = true }
+# Runtime check for libwebkit2gtk via dlopen in preflight_gui_check().
+# Already a transitive dependency (gtk, cairo-rs, tao all depend on libc),
+# so adding it directly has zero compile-time cost.
+libc = "0.2"
 
 [dev-dependencies]
 # Test harness: async test runtime, oneshot router testing, temp directories

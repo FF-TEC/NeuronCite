@@ -201,6 +201,76 @@ enum UserEvent {
 /// RGB components: R=10, G=15, B=26 (#0a0f1a), fully opaque (A=255).
 const MAIN_WINDOW_BG: (u8, u8, u8, u8) = (10, 15, 26, 255);
 
+// ---------------------------------------------------------------------------
+// Linux Wayland compatibility
+// ---------------------------------------------------------------------------
+
+/// On Linux under a Wayland session, forces GTK to use the X11 backend via
+/// XWayland. wry 0.54 + tao 0.34 cannot create a WebView from a Wayland
+/// window handle (`raw-window-handle` kind mismatch). Setting
+/// `GDK_BACKEND=x11` before GTK initialisation makes tao create an X11
+/// window through XWayland, which wry can handle.
+///
+/// No-op when:
+/// - The platform is not Linux.
+/// - `WAYLAND_DISPLAY` is not set (already running on X11).
+/// - `GDK_BACKEND` is already set by the user (respects explicit override).
+#[cfg(target_os = "linux")]
+fn ensure_x11_backend() {
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() && std::env::var_os("GDK_BACKEND").is_none() {
+        tracing::info!(
+            "Wayland session detected; setting GDK_BACKEND=x11 for WebView compatibility"
+        );
+        // SAFETY: Called before any GTK or event-loop initialisation.
+        // No other threads that read this variable have been spawned yet.
+        unsafe {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn ensure_x11_backend() {}
+
+// ---------------------------------------------------------------------------
+// Pre-flight GUI availability check
+// ---------------------------------------------------------------------------
+
+/// Checks whether the native GUI can be created on the current platform.
+///
+/// On Linux, verifies that `libwebkit2gtk-4.1.so.0` can be dynamically loaded.
+/// wry requires this library at runtime; if it is missing, the WebView
+/// constructor fails with an opaque dlopen error. Checking upfront lets the
+/// caller fall back to browser mode *before* consuming the shutdown channel.
+///
+/// On macOS and Windows this always returns `Ok(())` (WebKit is bundled with
+/// macOS; WebView2 is pre-installed on modern Windows).
+///
+/// # Errors
+///
+/// Returns a human-readable error string describing what is missing and how
+/// to install it.
+pub fn preflight_gui_check() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        let lib = std::ffi::CString::new("libwebkit2gtk-4.1.so.0").unwrap();
+        let handle = unsafe { libc::dlopen(lib.as_ptr(), libc::RTLD_LAZY) };
+        if handle.is_null() {
+            return Err(
+                "WebKitGTK runtime library not found (libwebkit2gtk-4.1.so.0).\n\
+                 Install with: sudo apt install libwebkit2gtk-4.1-0\n\
+                 Or use headless mode: neuroncite serve"
+                    .into(),
+            );
+        }
+        // Close the handle immediately -- we only needed to test loadability.
+        unsafe {
+            libc::dlclose(handle);
+        }
+    }
+    Ok(())
+}
+
 /// Launches the native GUI with a transparent splash screen shown during
 /// server startup, transitioning to the main application window once the
 /// server is ready.
@@ -245,6 +315,8 @@ pub fn run_gui_with_splash(
     url_rx: std::sync::mpsc::Receiver<String>,
     shutdown_tx: tokio::sync::oneshot::Sender<()>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    ensure_x11_backend();
+
     let mut event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
 
     // EventLoopProxy allows background threads to send custom events to the
@@ -501,6 +573,15 @@ pub fn run_gui_with_splash(
                             "On Windows, this typically means Microsoft WebView2 Runtime is not installed.\n\
                              Download from: https://developer.microsoft.com/en-us/microsoft-edge/webview2/"
                         );
+                        #[cfg(target_os = "linux")]
+                        eprintln!(
+                            "On Linux, this typically means WebKitGTK is not installed or the display\n\
+                             server does not support the window handle type used by this build.\n\
+                             \n\
+                             Install WebKitGTK:   sudo apt install libwebkit2gtk-4.1-0\n\
+                             Force X11 backend:   GDK_BACKEND=x11 neuroncite\n\
+                             Use headless mode:   neuroncite serve"
+                        );
                         if let Some(tx) = shutdown_tx.take() {
                             let _ = tx.send(());
                         }
@@ -595,6 +676,8 @@ pub fn open_native_window(
     url: &str,
     shutdown_tx: tokio::sync::oneshot::Sender<()>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    ensure_x11_backend();
+
     let mut event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
 
     // EventLoopProxy allows the IPC handler (which runs in the WebView

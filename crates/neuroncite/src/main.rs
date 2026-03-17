@@ -943,6 +943,142 @@ fn run_web(config_path: Option<PathBuf>, port: u16, bind: String, log_level: &Lo
     // --- GUI path: tao event loop on main thread, tokio in background thread ---
     #[cfg(feature = "gui")]
     {
+        // Pre-flight: verify that the native GUI can be created on this
+        // system (e.g. libwebkit2gtk is installed on Linux). If the check
+        // fails, fall back to the browser-based flow instead of consuming
+        // the shutdown channel in run_gui_with_splash (which would cause
+        // the server to shut down immediately on GUI failure).
+        if let Err(reason) = neuroncite_web::native_window::preflight_gui_check() {
+            // --- Browser fallback path (GUI prerequisites missing) ---
+            tracing::warn!(reason = %reason, "native GUI unavailable, falling back to browser");
+            eprintln!("WARN: {reason}");
+            eprintln!("Falling back to default browser.\n");
+
+            let (url_tx, url_rx) = std::sync::mpsc::channel::<String>();
+
+            let server_thread = std::thread::Builder::new()
+                .name("axum-server".into())
+                .spawn(move || {
+                    rt.block_on(async {
+                        tracing::info!(
+                            port = port, bind = %bind,
+                            "starting NeuronCite in web UI mode (browser fallback)"
+                        );
+
+                        let data_dir = neuroncite_core::paths::gui_index_dir();
+
+                        let (state, _executor_handle) =
+                            match init_server_context(config, true, None, data_dir).await {
+                                Ok(ctx) => ctx,
+                                Err(code) => return code,
+                            };
+
+                        let (listener, actual_port) = {
+                            let mut last_err = None;
+                            let mut found = None;
+                            for candidate in port..=port.saturating_add(19) {
+                                let addr_str = format!("{bind}:{candidate}");
+                                let addr: std::net::SocketAddr = match addr_str.parse() {
+                                    Ok(a) => a,
+                                    Err(e) => {
+                                        eprintln_error("bind_error", &format!("invalid bind address: {e}"));
+                                        return 1;
+                                    }
+                                };
+                                match tokio::net::TcpListener::bind(addr).await {
+                                    Ok(l) => {
+                                        if candidate != port {
+                                            tracing::info!(
+                                                requested_port = port,
+                                                actual_port = candidate,
+                                                "preferred port {port} was occupied, using port {candidate} instead"
+                                            );
+                                        }
+                                        found = Some((l, candidate));
+                                        break;
+                                    }
+                                    Err(e) => {
+                                        last_err = Some(e);
+                                    }
+                                }
+                            }
+                            match found {
+                                Some(pair) => pair,
+                                None => {
+                                    eprintln_error(
+                                        "bind_error",
+                                        &format!(
+                                            "failed to bind to ports {port}--{}; last error: {}",
+                                            port.saturating_add(19),
+                                            last_err.map(|e| e.to_string()).unwrap_or_default()
+                                        ),
+                                    );
+                                    return 1;
+                                }
+                            }
+                        };
+
+                        let url = format!("http://{bind}:{actual_port}");
+                        let addr = listener
+                            .local_addr()
+                            .expect("TCP listener address available after successful bind");
+                        tracing::info!(%addr, "NeuronCite web server listening");
+
+                        // No native dialogs in fallback mode (no tao event loop).
+                        let web_state = neuroncite_web::WebState::new(state, log_tx);
+                        let app = neuroncite_web::build_web_router(
+                            web_state.app_state.clone(),
+                            web_state,
+                        );
+
+                        let _ = url_tx.send(url);
+
+                        // Simplified shutdown: no native window, only Ctrl+C.
+                        match axum::serve(listener, app)
+                            .with_graceful_shutdown(shutdown_signal())
+                            .await
+                        {
+                            Ok(()) => {
+                                tracing::info!("web server shut down cleanly");
+                                0
+                            }
+                            Err(e) => {
+                                eprintln_error("server_error", &format!("server error: {e}"));
+                                1
+                            }
+                        }
+                    })
+                })
+                .expect("failed to spawn server thread");
+
+            // Wait for the server URL, then open the default browser.
+            match url_rx.recv() {
+                Ok(url) => {
+                    eprintln!();
+                    eprintln!("  NeuronCite is running at: {url}");
+                    eprintln!("  Native window not available, opened in browser instead.");
+                    eprintln!("  Press Ctrl+C to stop the server.");
+                    eprintln!();
+                    // Open browser synchronously -- no tokio runtime on main thread.
+                    if let Err(e) = opener::open_browser(&url) {
+                        eprintln!("  Could not open browser automatically: {e}");
+                        eprintln!("  Open this URL manually: {url}");
+                    }
+                }
+                Err(_) => {
+                    eprintln_error(
+                        "server_init",
+                        "server failed during startup (URL not received)",
+                    );
+                }
+            }
+
+            // Block main thread until server thread exits (on Ctrl+C).
+            return server_thread.join().unwrap_or(1);
+        }
+
+        // --- Normal GUI path (pre-flight passed) ---
+
         // Channel for the server thread to send the bound URL back to the main
         // thread after port scanning completes. If the server fails during
         // setup, the sender is dropped without sending, causing recv() to
@@ -1131,9 +1267,10 @@ fn run_web(config_path: Option<PathBuf>, port: u16, bind: String, log_level: &Lo
         //
         // run_gui_with_splash blocks the main thread until the user closes
         // the main window (or the server fails during startup), then returns
-        // control here. If GUI initialization fails (missing WebView2,
-        // missing display server), the error is printed and the server
-        // shuts down (shutdown_tx is dropped, causing shutdown_rx to fire).
+        // control here. If GUI initialization fails after the pre-flight
+        // check passed (rare edge case), the error is printed and the
+        // server shuts down (shutdown_tx is dropped, causing shutdown_rx
+        // to fire).
         match neuroncite_web::native_window::run_gui_with_splash(url_rx, shutdown_tx) {
             Ok(()) => {
                 // Window was closed normally (or server failed during startup
@@ -1144,6 +1281,10 @@ fn run_web(config_path: Option<PathBuf>, port: u16, bind: String, log_level: &Lo
                 eprintln_error(
                     "gui_init",
                     &format!("native GUI initialization failed: {e}"),
+                );
+                #[cfg(target_os = "linux")]
+                eprintln!(
+                    "Hint: try GDK_BACKEND=x11 neuroncite, or use neuroncite serve for headless mode"
                 );
             }
         }

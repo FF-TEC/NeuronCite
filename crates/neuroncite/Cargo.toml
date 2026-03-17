@@ -41,7 +41,7 @@ web = ["dep:neuroncite-web"]
 # neuroncite-web. When enabled, the web UI mode opens a native application
 # window instead of launching the default browser. When disabled, the existing
 # opener-based browser launch is used as fallback.
-gui = ["neuroncite-web?/gui"]
+gui = ["neuroncite-web?/gui", "dep:opener"]
 # The pdfium feature enables the pdfium-render backend in neuroncite-pdf
 # for PDFs with multi-column layouts, complex tables, and non-standard
 # font encodings that the default pdf-extract backend cannot parse.
@@ -100,6 +100,10 @@ uuid = { workspace = true }
 
 # Data parallelism for CPU-bound PDF extraction and chunking
 rayon = { workspace = true }
+
+# Cross-platform browser launcher, used by the GUI feature's browser fallback
+# path when the native window cannot be created (e.g. missing WebKitGTK).
+opener = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Temporary directories for integration tests and benchmark setup

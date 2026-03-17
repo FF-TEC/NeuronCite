@@ -972,6 +972,9 @@ mod tests {
             std::sync::mpsc::Receiver<String>,
             tokio::sync::oneshot::Sender<()>,
         ) -> Result<(), Box<dyn std::error::Error>> = crate::native_window::run_gui_with_splash;
+
+        let _preflight_fn_ptr: fn() -> Result<(), String> =
+            crate::native_window::preflight_gui_check;
     }
 
     // -----------------------------------------------------------------------
@@ -1122,6 +1125,37 @@ mod tests {
         // Server thread completes with exit code 0
         let exit_code = server_handle.await.unwrap();
         assert_eq!(exit_code, 0);
+    }
+
+    // -----------------------------------------------------------------------
+    // T-WEB-027b: preflight_gui_check function signature accessible
+    // -----------------------------------------------------------------------
+
+    /// Verifies that the `preflight_gui_check` function is compiled and its
+    /// public signature is accessible when the gui feature flag is enabled.
+    #[cfg(feature = "gui")]
+    #[test]
+    fn t_web_027b_preflight_gui_check_accessible() {
+        let _fn_ptr: fn() -> Result<(), String> = crate::native_window::preflight_gui_check;
+    }
+
+    // -----------------------------------------------------------------------
+    // T-WEB-027c: preflight_gui_check returns Ok on the build host
+    // -----------------------------------------------------------------------
+
+    /// On CI and developer machines where gui tests run, the WebKitGTK
+    /// runtime (Linux) or platform WebView (macOS/Windows) should be
+    /// available. This test ensures the dlopen check succeeds in
+    /// environments where the GUI is expected to work.
+    #[cfg(feature = "gui")]
+    #[test]
+    fn t_web_027c_preflight_gui_check_passes_on_build_host() {
+        let result = crate::native_window::preflight_gui_check();
+        assert!(
+            result.is_ok(),
+            "preflight_gui_check failed on build host: {:?}",
+            result.err()
+        );
     }
 
     // ================================================================
