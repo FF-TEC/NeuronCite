@@ -65,7 +65,8 @@ struct Cli {
 /// CLI subcommands corresponding to the different execution modes of NeuronCite.
 #[derive(Subcommand)]
 enum Command {
-    /// Launch the web UI: starts the API server and opens the default browser.
+    /// Launch the web UI: starts the API server and opens a native window
+    /// (with the gui feature) or the default browser (without gui).
     /// The SolidJS frontend is embedded in the binary and served by the same
     /// axum server that handles API requests. The server runs until Ctrl+C.
     #[cfg(feature = "web")]

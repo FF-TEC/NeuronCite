@@ -165,7 +165,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_index",
-            description: "Indexes documents by extracting text, chunking, computing embeddings, and storing in the vector database. Supports PDF, HTML, and all compiled file type extractors. Returns a job ID and session ID for tracking progress.\n\nThree input modes (mutually exclusive):\n- directory: scans for all supported files (pdf, html, txt, docx, xlsx, csv, images). Use file_types to restrict which extensions are included.\n- urls: indexes previously fetched HTML pages from cache (requires prior neuroncite_html_fetch or neuroncite_html_crawl).\n- files: reserved for future use (indexes specific file paths by extension).\n\nAll modes create a background job. Use neuroncite_job_status to track progress.",
+            description: "Indexes documents by extracting text, chunking, computing embeddings, and storing in the vector database. Supports PDF and HTML files. Returns a job ID and session ID for tracking progress.\n\nThree input modes (mutually exclusive):\n- directory: scans for supported files (.pdf, .html, .htm). Use file_types to restrict which extensions are included.\n- urls: indexes previously fetched HTML pages from cache (requires prior neuroncite_html_fetch or neuroncite_html_crawl).\n- files: reserved for future use (indexes specific file paths by extension).\n\nAll modes create a background job. Use neuroncite_job_status to track progress.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -272,7 +272,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_files",
-            description: "Lists indexed documents within a session with per-file statistics: chunk count (min/max/avg byte sizes), content part count, text byte counts, word estimates, source type (pdf, html, txt, docx, ...), and extraction status.\n\nFor HTML files, each entry includes a web_source object with URL, title, domain, author, and language.\n\nSupports sorting by name/size/pages/chunks, single-file detail via file_id, filtering by source_type, and domain filtering for HTML files.\n\nThe file_id from the response can be used with neuroncite_content to read document content, and with neuroncite_search via the file_ids parameter to restrict search scope. File IDs are session-scoped.",
+            description: "Lists indexed documents within a session with per-file statistics: chunk count (min/max/avg byte sizes), content part count, text byte counts, word estimates, source type (pdf or html), and extraction status.\n\nFor HTML files, each entry includes a web_source object with URL, title, domain, author, and language.\n\nSupports sorting by name/size/pages/chunks, single-file detail via file_id, filtering by source_type, and domain filtering for HTML files.\n\nThe file_id from the response can be used with neuroncite_content to read document content, and with neuroncite_search via the file_ids parameter to restrict search scope. File IDs are session-scoped.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -440,7 +440,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_content",
-            description: "Retrieves text content from an indexed document by part number. A 'part' is the logical content unit of the source format: a page in PDFs, a heading-based section in HTML, a paragraph block in plain text, a sheet in spreadsheets, or the full OCR output for images.\n\nTwo retrieval modes: provide 'part' for a single unit, or 'start'/'end' for a contiguous range (max 20 parts per request). Part numbers are 1-indexed.\n\nThe response includes the extraction_backend field indicating how the text was obtained (pdfium, ocr, html_readability, plain_text, etc.). For HTML sources, the response includes a web_source object with URL, title, and domain.\n\nWorkflow: Run neuroncite_search to find passages, then use neuroncite_content with the file_id and part range from each result to read surrounding context and verify quotes. Search results contain chunk excerpts; neuroncite_content provides the full content unit.",
+            description: "Retrieves text content from an indexed document by part number. A 'part' is the logical content unit of the source format: a page in PDFs or a heading-based section in HTML.\n\nTwo retrieval modes: provide 'part' for a single unit, or 'start'/'end' for a contiguous range (max 20 parts per request). Part numbers are 1-indexed.\n\nThe response includes the extraction_backend field indicating how the text was obtained (pdfium, ocr, html_readability). For HTML sources, the response includes a web_source object with URL, title, and domain.\n\nWorkflow: Run neuroncite_search to find passages, then use neuroncite_content with the file_id and part range from each result to read surrounding context and verify quotes. Search results contain chunk excerpts; neuroncite_content provides the full content unit.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -749,7 +749,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_discover",
-            description: "Scans a directory for supported files and reports what is already indexed. Lists all files by type (pdf, txt, docx, xlsx, csv, html, images), queries existing sessions, and identifies unindexed files. Reports per-type file counts and sizes, per-session coverage statistics, and a list of unindexed files with their types. This is the recommended first call before indexing a directory.",
+            description: "Scans a directory for supported files and reports what is already indexed. Lists all files by type (pdf, html), queries existing sessions, and identifies unindexed files. Reports per-type file counts and sizes, per-session coverage statistics, and a list of unindexed files with their types. This is the recommended first call before indexing a directory.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -781,7 +781,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_preview_chunks",
-            description: "Previews how a file will be split into chunks by a given strategy, without writing to the database. Extracts text, applies the chunking strategy, and returns the first N chunks with content, part ranges, and byte/word counts.\n\nSupports all file types: PDF, HTML (from cache), and all compiled extractors. For HTML: provide either file_path (cache file) or url; the response includes section structure. For PDF: provide file_path to the PDF on disk.\n\nUseful for evaluating chunking parameters before committing to a full index run.",
+            description: "Previews how a file will be split into chunks by a given strategy, without writing to the database. Extracts text, applies the chunking strategy, and returns the first N chunks with content, part ranges, and byte/word counts.\n\nSupports PDF and HTML files. For HTML: provide either file_path (cache file) or url; the response includes section structure. For PDF: provide file_path to the PDF on disk.\n\nUseful for evaluating chunking parameters before committing to a full index run.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -824,7 +824,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_index_add",
-            description: "Incrementally adds or updates specific files in an existing index session. Supports all file types (PDF, HTML cache files, TXT, DOCX, etc.). Files already present are checked for changes (mtime/size + SHA-256); unchanged files are skipped. Changed and new files are extracted, chunked, embedded, and stored. The session's HNSW index is rebuilt once at the end.",
+            description: "Incrementally adds or updates specific files in an existing index session. Supports PDF and HTML cache files. Files already present are checked for changes (mtime/size + SHA-256); unchanged files are skipped. Changed and new files are extracted, chunked, embedded, and stored. The session's HNSW index is rebuilt once at the end.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -954,7 +954,7 @@ pub fn all_tools() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "neuroncite_reindex_file",
-            description: "Re-indexes a single file within an existing session. The old file record and associated content is deleted, then the file is re-extracted with the current extractor, re-chunked, re-embedded, and the HNSW index is rebuilt. Supports all file types.\n\nWhen the file_path was not previously indexed in the session, it is added as a new file. The response 'action' field reports 'reindexed' for previously known files or 'added' for new ones.\n\nThe session's vector dimension must match the currently loaded embedding model.",
+            description: "Re-indexes a single file within an existing session. The old file record and associated content is deleted, then the file is re-extracted with the current extractor, re-chunked, re-embedded, and the HNSW index is rebuilt. Supports PDF and HTML files.\n\nWhen the file_path was not previously indexed in the session, it is added as a new file. The response 'action' field reports 'reindexed' for previously known files or 'added' for new ones.\n\nThe session's vector dimension must match the currently loaded embedding model.",
             input_schema: json!({
                 "type": "object",
                 "properties": {

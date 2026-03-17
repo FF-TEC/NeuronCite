@@ -4,8 +4,12 @@ Python client library for the [NeuronCite](https://github.com/FF-TEC/NeuronCite)
 semantic document search API. Provides typed access to all REST endpoints and a
 subprocess manager for the server binary.
 
-```
+```bash
+# From PyPI (once published):
 pip install neuroncite
+
+# From source:
+pip install ./clients/python
 ```
 
 **Requires Python 3.10+.** The only runtime dependency is

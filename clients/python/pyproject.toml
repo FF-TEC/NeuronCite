@@ -41,11 +41,11 @@ dependencies = ["requests>=2.31.0"]
 dev = ["pytest>=7.0", "responses>=0.23"]
 
 [project.urls]
-Homepage = "https://github.com/neuroncite/neuroncite"
-Repository = "https://github.com/neuroncite/neuroncite"
-Documentation = "https://github.com/neuroncite/neuroncite/tree/main/clients/python#readme"
-Changelog = "https://github.com/neuroncite/neuroncite/blob/main/clients/python/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/neuroncite/neuroncite/issues"
+Homepage = "https://github.com/FF-TEC/NeuronCite"
+Repository = "https://github.com/FF-TEC/NeuronCite"
+Documentation = "https://github.com/FF-TEC/NeuronCite/tree/main/clients/python#readme"
+Changelog = "https://github.com/FF-TEC/NeuronCite/blob/main/clients/python/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/FF-TEC/NeuronCite/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

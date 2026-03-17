@@ -36,7 +36,7 @@ const WelcomeDialog = lazy(() => import("./components/ui/WelcomeDialog"));
 /**
  * Root application component. Renders the three-zone layout (topbar, body,
  * statusbar) on top of the animated gradient mesh background. The body zone
- * shows one of six tabs controlled by the activeTab state in the store:
+ * shows one of seven tabs controlled by the activeTab state in the store:
  *
  * Workflow tabs (left group): Sources, Indexing, Search, Citations, Annotations
  * Utility tabs (right group): Settings, Models

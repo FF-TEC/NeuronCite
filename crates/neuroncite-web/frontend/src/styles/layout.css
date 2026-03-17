@@ -1,8 +1,8 @@
 /* ================================================================
    LAYOUT
    Three-zone grid layout: topbar, tab content, statusbar.
-   The body zone renders one of six tabs (Sources, Indexing, Search,
-   Citations, Settings, Models). The search tab uses a resizable split
+   The body zone renders one of seven tabs (Sources, Indexing, Search,
+   Citations, Annotations, Settings, Models). The search tab uses a resizable split
    pane for settings and results.
    ================================================================ */
 

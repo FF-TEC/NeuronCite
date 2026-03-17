@@ -187,16 +187,16 @@ const STANDARD_DPI: u32 = 300;
 /// parameter specifies the Tesseract language code (e.g., "eng", "deu",
 /// or "eng+deu" for multiple languages).
 ///
-/// Tesseract is located via PATH or auto-downloaded on first use. The tessdata
-/// directory is resolved from the auto-download cache when using a cached
-/// Tesseract binary.
+/// Tesseract is located via PATH or the Doctor panel's download cache. It is
+/// **not** auto-downloaded during indexing -- install it beforehand via the
+/// system package manager or the Doctor panel's install button.
 ///
 /// # Errors
 ///
 /// Returns [`PdfError::Ocr`] if Tesseract cannot be found, the subprocess
 /// fails, the output is not valid UTF-8, or the language parameter fails
 /// validation against the allowlist.
-/// Returns [`PdfError::DepDownload`] if Tesseract auto-download fails.
+/// Returns [`PdfError::DepDownload`] if Tesseract is not installed.
 #[cfg(feature = "ocr")]
 pub fn ocr_page(image_data: &[u8], language: &str) -> Result<String, PdfError> {
     validate_tesseract_language(language)?;

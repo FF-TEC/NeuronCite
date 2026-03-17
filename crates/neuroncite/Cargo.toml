@@ -51,7 +51,7 @@ pdfium = ["neuroncite-pdf/pdfium", "neuroncite-api/pdfium"]
 # for image-heavy pages that produce no extractable text from either
 # pdf-extract or pdfium backends. Implicitly enables the pdfium feature
 # (page rendering requires pdfium). Tesseract is invoked as a CLI
-# subprocess and auto-downloaded on first use if not found on PATH.
+# subprocess and must be installed separately (system PATH or Doctor panel).
 ocr = ["neuroncite-pdf/ocr", "neuroncite-api/ocr"]
 
 [dependencies]
@@ -117,7 +117,7 @@ reqwest = { workspace = true }
 # neuroncite-pdf is compiled with both "pdfium" and "ocr" features so that
 # integration tests can exercise the pdfium fallback extraction and Tesseract
 # OCR code paths. The OCR feature uses CLI subprocess invocation (no C library
-# dependencies); Tesseract is auto-downloaded on first use if not on PATH.
+# dependencies); Tesseract must be installed via system PATH or Doctor panel.
 neuroncite-core = { workspace = true }
 neuroncite-store = { workspace = true }
 neuroncite-chunk = { workspace = true }

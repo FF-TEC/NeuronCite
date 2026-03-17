@@ -27,7 +27,7 @@ members = [
 
 # Shared package metadata inherited by each crate via `version.workspace = true`,
 # `edition.workspace = true`, etc. in its own Cargo.toml. Changing the version
-# here updates all 15 crates at once; the frontend package.json must be bumped
+# here updates all 16 crates at once; the frontend package.json must be bumped
 # manually (it is private and never published to npm).
 [workspace.package]
 version = "0.1.0"
@@ -47,7 +47,7 @@ publish = false
 # Treat compiler warnings as errors in all workspace crates. This mirrors
 # the `#![deny(warnings)]` attribute that was previously declared in each
 # crate's lib.rs/main.rs. Centralizing it here avoids repeating the
-# attribute in 14 crates and ensures consistent enforcement.
+# attribute in every crate and ensures consistent enforcement.
 warnings = "deny"
 
 [workspace.lints.clippy]
@@ -162,7 +162,7 @@ pdfium-render = "0.8"
 image = "0.25"
 
 # OCR via Tesseract CLI subprocess (optional, requires Tesseract binary at
-# runtime; auto-downloaded on first use if not found on PATH)
+# runtime; install via system package manager or the Doctor panel)
 
 # Unicode text processing for sentence segmentation and normalization
 unicode-segmentation = "1"

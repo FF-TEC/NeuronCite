@@ -6,7 +6,8 @@
 # libraries. The optional "pdfium" feature enables the pdfium-render backend for
 # multi-column and complex layout extraction. The optional "ocr" feature enables
 # Tesseract-based OCR via CLI subprocess invocation. Both optional features
-# require external binaries at runtime (auto-downloaded on first use).
+# require external binaries at runtime (pdfium is auto-downloaded on first use;
+# Tesseract must be installed via the system package manager or Doctor panel).
 
 [package]
 name = "neuroncite-pdf"
@@ -23,8 +24,9 @@ default = []
 # auto-downloaded on first use if not found next to the executable or on PATH.
 pdfium = ["dep:pdfium-render"]
 # Enables Tesseract-based OCR fallback for image-heavy pages. Tesseract is
-# invoked as a CLI subprocess and auto-downloaded on first use if not found
-# on PATH. The pdfium feature is required for page rendering to raster images
+# invoked as a CLI subprocess. It must be installed separately -- either via
+# the system package manager (PATH) or through the Doctor panel's install
+# button. The pdfium feature is required for page rendering to raster images
 # before OCR.
 ocr = ["pdfium", "dep:image"]
 

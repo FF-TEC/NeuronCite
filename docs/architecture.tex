@@ -107,9 +107,11 @@ resulting vectors in an HNSW index and metadata in an embedded SQLite database, 
 provides ranked retrieval of the most semantically relevant passages for a given
 natural-language query.
 
-The application ships as a single executable file that contains a browser-based
+The application ships as a single executable file that contains an embedded
 SolidJS frontend, an HTTP REST API server, and a command-line interface with subcommands.
-Double-clicking the executable starts the web server and opens the default browser.
+Double-clicking the executable starts the web server and opens a native OS window
+(WebView2 on Windows, WebKit on macOS/Linux). If the native window cannot be created
+(e.g.\ missing WebKitGTK on Linux), the application falls back to the default browser.
 Running the executable from a terminal with the \texttt{serve} subcommand
 starts the API server in headless mode without opening a browser, enabling automation by
 scripts and LLM agents. A CPU-only build using the default \texttt{pdf-extract}
@@ -169,7 +171,7 @@ citation verification, and PDF annotation:
     Async Runtime & tokio (multi-threaded) \\
     PDF Extraction (primary) & pdf-extract (pure Rust, fast) \\
     PDF Extraction (fallback) & pdfium-render (handles complex layouts, multi-column) \\
-    OCR & Tesseract CLI subprocess (auto-downloaded on first use) \\
+    OCR & Tesseract CLI subprocess (installed via Doctor panel or PATH) \\
     Embedding (ONNX) & ort (Rust bindings for ONNX Runtime with CUDA) \\
     ANN Index & hnsw\_rs (Hierarchical Navigable Small World graph) \\
     Database & SQLite via rusqlite (embedded, zero-configuration) \\
@@ -251,9 +253,10 @@ citation verification, and PDF annotation:
 % ============================================================
 \section{Workspace Structure}
 
-The project is organized as a Cargo workspace with fourteen library crates, one binary
-crate, and one standalone test-fixture generator (\texttt{neuroncite-testgen}).
-Each library crate encapsulates a single architectural concern.
+The project is organized as a Cargo workspace with fifteen library crates, one binary
+crate, and one standalone test-fixture generator (\texttt{neuroncite-testgen}), for a
+total of sixteen workspace members. Each library crate encapsulates a single
+architectural concern.
 
 \subsection{Crate Overview}
 
@@ -385,7 +388,8 @@ Each library crate encapsulates a single architectural concern.
                                 index, search, doctor, mcp). In web mode,
                                 initializes the tokio runtime, starts the Axum
                                 server with the embedded SolidJS frontend, and
-                                opens the default browser. In headless mode, runs
+                                opens a native OS window (or falls back to the
+                                default browser). In headless mode, runs
                                 the API server, executes a single CLI command, or
                                 starts the MCP stdio server and exits. \\
     neuroncite-testgen & Binary & Standalone test-fixture generator
@@ -494,7 +498,7 @@ Arrows point from the dependent crate to the dependency it consumes.
     \node[bincrate] (bin) at (8.0, 8.4) {neuroncite (bin)};
 
     % === Core dependency annotation ===
-    % Most library crates depend on neuroncite-core directly (11 of 14).
+    % Most library crates depend on neuroncite-core directly (12 of 15).
     % neuroncite-annotate and neuroncite-citation obtain core types
     % transitively; neuroncite-llm has zero workspace dependencies.
     % Drawing these edges would dominate the graph, so a text annotation
@@ -701,8 +705,9 @@ imported by every other crate.
                       and probe functions. \\
     src/ocr.rs      & public    & Renders pages to raster images at adaptive DPI via
                       pdfium, writes them to temporary files, and invokes the
-                      Tesseract CLI binary as a subprocess. Tesseract is located
-                      via PATH or auto-downloaded on first use. \\
+                      Tesseract CLI binary as a subprocess. Tesseract must be
+                      installed via the system package manager or the Doctor
+                      panel's install button. \\
     src/quality.rs  & public    & Evaluates extracted text against quality heuristics
                       (alphabetic ratio, replacement character density, line break
                       density, unique token ratio) to decide backend fallback. \\
@@ -2272,9 +2277,10 @@ content and triggers OCR:
           pdfium's rendering capabilities (see below).
     \item The rendered PNG image is written to a temporary file and passed to the
           Tesseract CLI binary as a subprocess (\texttt{tesseract <file> stdout -l <lang>}).
-          Tesseract is located on the system PATH or in the auto-download cache.
-          If not found, it is downloaded automatically on first use (UB-Mannheim
-          installer on Windows, AppImage on Linux).
+          Tesseract is located on the system PATH or in the Doctor panel's
+          download cache. It must be installed beforehand via the system package
+          manager or the Doctor panel's install button (UB-Mannheim installer on
+          Windows, AppImage on Linux).
     \item The OCR output replaces the empty extraction result.
     \item The \texttt{PageText} is annotated with extraction backend \texttt{ocr} so that
           downstream components can distinguish OCR text from directly extracted text.
@@ -4698,7 +4704,8 @@ through the workspace root and the binary crate. The \texttt{web}, \texttt{mcp},
     \texttt{web} (default) & Compiles the \texttt{neuroncite-web} crate and pulls in
         \texttt{rust-embed}, \texttt{mime\_guess}, and \texttt{opener}. Enables the
         \texttt{neuroncite web} CLI subcommand that starts an Axum server with the
-        embedded SolidJS frontend and opens the default browser. The
+        embedded SolidJS frontend and opens a native OS window (when the
+        \texttt{gui} feature is also enabled) or the default browser. The
         \texttt{backend-ort} feature is forwarded to \texttt{neuroncite-web} via
         optional dependency syntax. Defined on the binary crate. \\
     \texttt{pdfium} (default) & Enables the \texttt{pdfium-render} backend in
@@ -4707,10 +4714,11 @@ through the workspace root and the binary crate. The \texttt{web}, \texttt{mcp},
         runtime. Defined on \texttt{neuroncite-pdf}, forwarded by the binary
         crate. \\
     \texttt{ocr} (default) & Enables Tesseract-based OCR fallback for image-heavy pages in
-        \texttt{neuroncite-pdf}. Tesseract is invoked as a CLI subprocess and
-        auto-downloaded on first use if not found on PATH. Implies the
-        \texttt{pdfium} feature for page rendering to raster images. Defined on
-        \texttt{neuroncite-pdf}, forwarded by the binary crate. \\
+        \texttt{neuroncite-pdf}. Tesseract is invoked as a CLI subprocess and must
+        be installed separately via the system package manager or the Doctor
+        panel's install button. Implies the \texttt{pdfium} feature for page
+        rendering to raster images. Defined on \texttt{neuroncite-pdf}, forwarded
+        by the binary crate. \\
     \texttt{mcp} (default) & Compiles the \texttt{neuroncite-mcp} crate and enables the
         \texttt{mcp serve}, \texttt{mcp install}, \texttt{mcp uninstall}, and
         \texttt{mcp status} CLI subcommands. The MCP crate is an optional
@@ -5026,9 +5034,10 @@ tabular output for interactive terminal use.
     \normalfont\textbf{Subcommand} & \textbf{Description} \\
     \midrule
     web             & Starts the Axum HTTP server with the embedded SolidJS
-                      frontend and opens the default browser. This is the default
-                      mode when no subcommand is given (double-click behavior on
-                      Windows). Accepts \texttt{-{}-port}, \texttt{-{}-bind},
+                      frontend and opens a native OS window (with the \texttt{gui}
+                      feature) or the default browser (without \texttt{gui}). This
+                      is the default mode when no subcommand is given (double-click
+                      behavior on Windows). Accepts \texttt{-{}-port}, \texttt{-{}-bind},
                       and \texttt{-{}-config} flags. \\
     serve           & Starts the API server in headless mode without a browser window.
                       The server runs until terminated by \texttt{SIGINT} (Ctrl+C),

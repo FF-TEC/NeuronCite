@@ -18,7 +18,7 @@
 #   Linux x86_64 (server) -- no gui, opens browser via opener crate instead
 #                           Zero runtime dependencies beyond glibc
 #   Linux ARM64 (gui)     -- all features, native GUI via wry/WebKit2GTK
-#   Linux ARM64 (server)  -- no gui, zero runtime dependencies
+#   Linux ARM64 (server)  -- no gui, zero runtime dependencies beyond glibc
 #   macOS ARM64           -- all default features, native GUI via wry/WebKit
 #   macOS x86_64          -- all default features, native GUI via wry/WebKit
 #
@@ -211,8 +211,10 @@ jobs:
   # Linux x86_64 -- Server variant (no GUI)
   # Features: backend-ort, web, mcp, pdfium, ocr  (gui excluded)
   # Without the gui feature the binary opens the default browser via the opener
-  # crate instead of a native window. This variant has zero runtime dependencies
-  # beyond glibc and is suitable for headless servers and SSH environments.
+  # crate instead of a native window. The rfd crate still causes dynamic links
+  # to GTK/Wayland at compile time, but the binary runs correctly on headless
+  # systems where these libraries are absent -- the browse/native endpoint
+  # gracefully falls back. Suitable for headless servers and SSH environments.
   # ────────────────────────────────────────────────────────────────────────────
   build-linux-x64-server:
     name: Build / Linux x86_64 (Server)
@@ -339,8 +341,8 @@ jobs:
 
   # ────────────────────────────────────────────────────────────────────────────
   # Linux ARM64 -- Server variant (no GUI)
-  # Zero runtime dependencies. Suitable for Raspberry Pi, ARM servers, and
-  # any headless ARM64 Linux environment.
+  # Zero runtime dependencies beyond glibc. Suitable for Raspberry Pi, ARM
+  # servers, and any headless ARM64 Linux environment.
   # ────────────────────────────────────────────────────────────────────────────
   build-linux-arm64-server:
     name: Build / Linux ARM64 (Server)
@@ -807,7 +809,7 @@ jobs:
             | File | Notes |
             |------|-------|
             | `neuroncite-linux-x64` | Native GUI window. Requires `libwebkit2gtk-4.1-0` |
-            | `neuroncite-linux-x64-server` | No native window, opens browser automatically. Zero runtime dependencies |
+            | `neuroncite-linux-x64-server` | Headless server, opens the default browser on launch. Zero required runtime dependencies beyond glibc |
             | `neuroncite-linux-arm64` | ARM64 GUI variant (Raspberry Pi 4/5, ARM servers with desktop) |
             | `neuroncite-linux-arm64-server` | ARM64 headless variant |
 

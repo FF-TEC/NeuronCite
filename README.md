@@ -9,36 +9,44 @@
 <h3 align="center">Autonomous Citation Verification & Semantic Search</h3>
 
 <p align="center">
-  Local-first. Single binary. No cloud dependency. GPU-accelerated.
+  Local-first. Single binary (CPU-only) or minimal bundle (GPU). No cloud dependency. GPU-accelerated.
 </p>
 
 ---
 
 NeuronCite is an enterprise-grade semantic document search engine with autonomous
-citation verification, written in Rust and distributed as a single binary for
-Windows, macOS, and Linux. Every operation runs locally on the user's machine --
-no external API calls, no telemetry, no cloud services. Documents are indexed
-into a local SQLite database with dense vector embeddings and full-text keyword
-indexes. Embedding models and LLMs run entirely on user hardware, supporting
-air-gapped deployments.
+citation verification, written in Rust. CPU-only builds ship as a single binary
+with zero runtime dependencies; GPU and pdfium builds include additional shared
+libraries (see [Installation](#installation)). Available for Windows, macOS, and
+Linux. All document processing runs locally -- no user data leaves the machine,
+no telemetry, no cloud services. Network access is used only for initial
+dependency downloads (embedding models, pdfium) and optional features (DOI
+resolution, HTML crawling). Documents are indexed into a local SQLite database
+with dense vector embeddings and full-text keyword indexes. Embedding models and
+LLMs run entirely on user hardware, supporting air-gapped deployments after
+provisioning.
 
 ---
 
 ## Why NeuronCite
 
-**Privacy by Design** -- All processing runs locally. No data leaves the machine.
-No cloud accounts, no API keys, no internet connection required after initial
-model download. Supports air-gapped and classified environments.
+**Privacy by Design** -- All document processing runs locally. No user data
+leaves the machine, no telemetry, no cloud accounts. No internet connection
+required after initial setup (embedding models, pdfium, and optional
+OCR/Ollama binaries). Network-dependent features (DOI resolution, HTML crawling,
+citation source fetching) are unavailable in air-gapped mode. Supports
+air-gapped and classified environments once all dependencies are provisioned.
 
 **Autonomous Citation Verification** -- Feed a LaTeX paper and its bibliography.
 NeuronCite indexes the cited PDFs, runs a local LLM via Ollama, and verifies
 every `\cite{}` command against actual source material. Each citation receives a
 verdict, confidence score, and correction suggestions.
 
-**Enterprise-Grade Architecture** -- 15 Rust crates with clear separation of
+**Enterprise-Grade Architecture** -- 16 Rust crates with clear separation of
 concerns. 43 MCP tools, 34 REST API endpoints, a browser-based GUI with 7
-tabs, a Python client library, and 11 CLI commands -- all compiled into a single
+tabs, a Python client library, and 10 CLI commands -- all compiled into a single
 executable that runs without Docker, Kubernetes, or external infrastructure.
+Citation verification additionally requires a running Ollama instance.
 
 ---
 
@@ -48,8 +56,9 @@ executable that runs without Docker, Kubernetes, or external infrastructure.
 [Releases](https://github.com/FF-TEC/NeuronCite/releases) page.
 
 **2.** Double-click the binary. The application opens in a native window
-(WebView2 on Windows, WebKit on macOS/Linux) -- no terminal, no configuration,
-no installation required.
+(WebView2 on Windows, WebKit on macOS/Linux) -- no terminal, no configuration
+required. Linux GUI builds require `libwebkit2gtk-4.1-0` at runtime (see
+[Installation](#installation) for details).
 
 **3.** Select a directory of PDFs in the **Indexing** tab, choose an embedding
 model, and click **Start**. The first run downloads the selected model
@@ -283,7 +292,11 @@ cargo build --release -p neuroncite \
 ### Python Client
 
 ```bash
+# From PyPI (once published):
 pip install neuroncite
+
+# From source:
+pip install ./clients/python
 ```
 
 Requires Python 3.10+. See [clients/python/README.md](clients/python/README.md)
@@ -301,7 +314,9 @@ neuroncite
 neuroncite web --port 3030
 ```
 
-Starts the API server and opens the SolidJS web frontend in your browser at
+Starts the API server and opens the SolidJS web frontend in a native window
+(WebView2 on Windows, WebKit on macOS/Linux). Falls back to the default browser
+if the native window cannot be created. The frontend is served at
 `http://localhost:3030`.
 
 ### Headless Server
@@ -346,39 +361,25 @@ as JSON (default) or plain text (`--format text`).
 ```bash
 neuroncite mcp install                        # registers in Claude Code settings (default)
 neuroncite mcp install --target claude-desktop # registers in Claude Desktop App settings
+neuroncite mcp uninstall                      # removes registration from Claude Code settings
+neuroncite mcp status                         # shows current registration status
 neuroncite mcp serve                          # starts stdio JSON-RPC server
 ```
-
-### Citation Verification (CLI)
-
-```bash
-neuroncite cite \
-  --latex ./paper.tex \
-  --bib ./references.bib \
-  --pdfs ./sources/ \
-  --ollama-model llama3.1 \
-  --mode balanced
-```
-
-Parses the LaTeX file, resolves BibTeX entries, indexes source PDFs, and
-verifies all citations. Results are exported as CSV, XLSX, JSON, and annotated
-PDFs.
 
 ### All Commands
 
 | Command | Description |
 |---------|-------------|
-| `neuroncite` / `neuroncite web` | Launch web UI in browser |
+| `neuroncite` / `neuroncite web` | Launch web UI in a native window (browser fallback) |
 | `neuroncite serve` | Headless API server |
 | `neuroncite index` | Index a directory of PDFs |
 | `neuroncite search` | Execute search queries |
-| `neuroncite cite` | Run citation verification pipeline |
 | `neuroncite annotate` | Annotate PDFs from CSV/JSON |
 | `neuroncite doctor` | Check runtime dependencies (Tesseract, pdfium, GPU) |
 | `neuroncite sessions` | List index sessions in a database |
 | `neuroncite export` | Export results as Markdown, BibTeX, CSL-JSON, RIS, or plain text |
-| `neuroncite models list\|download` | Manage embedding models |
-| `neuroncite mcp install\|serve` | Register and run MCP server (Claude Code / Desktop App) |
+| `neuroncite models list\|info\|download\|verify\|system` | Manage embedding models and check system capabilities |
+| `neuroncite mcp install\|uninstall\|serve\|status` | Register, remove, run, and check MCP server |
 | `neuroncite version` | Print version, build features, and Git commit hash |
 
 ---
@@ -412,7 +413,7 @@ PDFs / HTML pages
   Ranked results with citations, page numbers, and scores
 ```
 
-### Cargo Workspace (15 Crates)
+### Cargo Workspace (16 Crates)
 
 | Layer | Crate | Responsibility |
 |-------|-------|---------------|
@@ -431,6 +432,7 @@ PDFs / HTML pages
 | Core | `neuroncite-chunk` | Text chunking strategies (page, word, token, sentence) |
 | Core | `neuroncite-llm` | LLM abstraction layer, Ollama HTTP client |
 | Foundation | `neuroncite-core` | Shared types, trait definitions, configuration, error types (zero internal dependencies) |
+| Dev | `neuroncite-testgen` | Test data generation and property-based testing utilities |
 
 ### Feature Flags
 
@@ -468,7 +470,7 @@ after the initial model download.
 - [neuroncite.com](https://neuroncite.com) -- Project website with feature overview, FAQ, and roadmap
 - [REST API and CLI Reference](https://neuroncite.com/docs/) -- Full endpoint documentation, Python client guide, MCP setup
 - [Pricing and Licensing](https://neuroncite.com/pricing/) -- AGPL-3.0 (free) and Enterprise license comparison
-- [Architecture Document](docs/architecture.pdf) -- Full system design (15 crates, data flow, design decisions)
+- [Architecture Document](docs/architecture.pdf) -- Full system design (16 crates, data flow, design decisions)
 - [Docker Deployment](docker/README.md) -- Image variants, compose profiles, environment variables, local builds
 - [Python Client](clients/python/README.md) -- Full API reference with 30+ typed methods
 - [Tools and Scripts](tools/README.md) -- CI validators, code generators, developer utilities
@@ -497,10 +499,11 @@ process and response timeline.
 
 NeuronCite is dual-licensed:
 
-- **AGPL-3.0-only** for open-source, academic, and personal use.
+- **AGPL-3.0-only** -- free copyleft license for any use, including commercial.
+  Requires source disclosure when distributing or providing network access.
   See [LICENSE](LICENSE).
 - **Commercial license** for proprietary products, SaaS deployments, and
-  redistribution without source disclosure.
+  redistribution without AGPL source-disclosure obligations.
   See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 For commercial licensing inquiries: licensing@neuroncite.com

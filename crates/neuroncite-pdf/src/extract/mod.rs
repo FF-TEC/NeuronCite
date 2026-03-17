@@ -128,10 +128,10 @@ pub fn extract_pages(
 
 /// Reads the structural page count from the PDF's page tree.
 ///
-/// Uses pdfium as the primary source when the `pdfium` feature is enabled,
-/// because pdfium handles linearized PDFs, incremental updates, and XRef
-/// stream objects more reliably than lopdf. Falls back to lopdf when pdfium
-/// is unavailable or fails. When both sources succeed but disagree on the
+/// Uses pdfium as the preferred page-count source when the `pdfium` feature
+/// is enabled, because pdfium handles linearized PDFs, incremental updates,
+/// and XRef stream objects more reliably than lopdf. Falls back to lopdf
+/// when pdfium is unavailable or fails. When both sources succeed but disagree on the
 /// page count, pdfium's count is preferred and a warning is logged. This
 /// guards against inconsistent pdf_page_count values across sessions that
 /// arise when parallel rayon extraction causes transient pdfium binding
