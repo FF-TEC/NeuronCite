@@ -6,25 +6,25 @@
   <img src="crates/neuroncite-web/assets/splash.png" alt="NeuronCite" width="400" />
 </p>
 
-<h3 align="center">Autonomous Citation Verification & Semantic Search</h3>
-
 <p align="center">
-  Local-first. Single binary (CPU-only) or minimal bundle (GPU). No cloud dependency. GPU-accelerated.
+  <code>Rust / Single Binary / Local-First / MCP-Native / Ollama-Powered</code>
 </p>
+
+<h3 align="center">Your Documents. Your Machine. Your Answers.</h3>
 
 ---
 
-NeuronCite is an enterprise-grade semantic document search engine with autonomous
-citation verification, written in Rust. CPU-only builds ship as a single binary
-with zero runtime dependencies; GPU and pdfium builds include additional shared
-libraries (see [Installation](#installation)). Available for Windows, macOS, and
-Linux. All document processing runs locally -- no user data leaves the machine,
-no telemetry, no cloud services. Network access is used only for initial
-dependency downloads (embedding models, pdfium) and optional features (DOI
-resolution, HTML crawling). Documents are indexed into a local SQLite database
-with dense vector embeddings and full-text keyword indexes. Embedding models and
-LLMs run entirely on user hardware, supporting air-gapped deployments after
-provisioning.
+NeuronCite is an enterprise-grade semantic search engine that transforms your
+document library into an instantly searchable knowledge base -- and autonomously
+verifies every citation in your academic papers using local LLMs. No cloud. No
+API keys. Your data stays on your machine.
+
+Written in Rust, it ships as a single binary (CPU) or minimal bundle (GPU) for
+Windows, macOS, and Linux. After a one-time download of models and runtime
+dependencies, the system operates fully offline, including in air-gapped and
+classified environments. A built-in MCP server with 43 tools lets AI assistants
+like Claude control the full workflow -- indexing, searching, verifying
+citations, annotating PDFs -- directly from the chat interface.
 
 ---
 
