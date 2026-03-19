@@ -221,66 +221,86 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
-    // T-IDX-011: compute_batch_size returns REFERENCE_BATCH_SIZE for BERT
-    //            sequence length (512 tokens).
+    // Fixed-hardware capabilities used by batch size tests. CUDA is chosen
+    // because its branch returns the base value without any host-dependent
+    // scaling (no core count, no RAM lookup). This makes the assertions
+    // deterministic across all machines -- developer laptops, CI runners,
+    // and high-core-count build servers alike.
+    // -----------------------------------------------------------------------
+
+    fn cuda_caps() -> InferenceCapabilities {
+        InferenceCapabilities {
+            active_ep: "CUDA".into(),
+            system_memory_bytes: 16 * 1024 * 1024 * 1024,
+            unified_memory: false,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // T-IDX-011: compute_batch_size_with_caps returns REFERENCE_BATCH_SIZE
+    //            for BERT sequence length (512 tokens) on a discrete GPU.
     // -----------------------------------------------------------------------
 
     #[test]
     fn t_idx_011_batch_size_bert_512() {
         assert_eq!(
-            compute_batch_size(512),
+            compute_batch_size_with_caps(512, &cuda_caps()),
             32,
             "BERT-family models with 512 tokens must use batch_size=32"
         );
     }
 
     // -----------------------------------------------------------------------
-    // T-IDX-012: compute_batch_size returns 2 for Qwen/GTE-Large
-    //            sequence length (8192 tokens).
+    // T-IDX-012: compute_batch_size_with_caps returns 2 for Qwen/GTE-Large
+    //            sequence length (8192 tokens) on a discrete GPU.
     // -----------------------------------------------------------------------
 
     #[test]
     fn t_idx_012_batch_size_qwen_8192() {
         assert_eq!(
-            compute_batch_size(8192),
+            compute_batch_size_with_caps(8192, &cuda_caps()),
             2,
             "models with 8192-token context must use batch_size=2"
         );
     }
 
     // -----------------------------------------------------------------------
-    // T-IDX-013: compute_batch_size clamps to 1 for very long contexts.
+    // T-IDX-013: compute_batch_size_with_caps clamps to 1 for very long
+    //            contexts on a discrete GPU.
     // -----------------------------------------------------------------------
 
     #[test]
     fn t_idx_013_batch_size_very_long_context() {
+        let caps = cuda_caps();
         assert_eq!(
-            compute_batch_size(32768),
+            compute_batch_size_with_caps(32768, &caps),
             1,
             "very long context (32768) must clamp batch_size to 1"
         );
         assert_eq!(
-            compute_batch_size(65536),
+            compute_batch_size_with_caps(65536, &caps),
             1,
             "extreme context (65536) must clamp batch_size to 1"
         );
     }
 
     // -----------------------------------------------------------------------
-    // T-IDX-014: compute_batch_size handles edge case of zero or one.
+    // T-IDX-014: compute_batch_size_with_caps handles edge cases of zero or
+    //            one without panicking on a discrete GPU.
     // -----------------------------------------------------------------------
 
     #[test]
     fn t_idx_014_batch_size_edge_cases() {
+        let caps = cuda_caps();
         // max_sequence_length=0 should not divide by zero; clamps to 32.
         assert_eq!(
-            compute_batch_size(0),
+            compute_batch_size_with_caps(0, &caps),
             32,
             "zero sequence length must not panic and must return max batch_size"
         );
         // max_sequence_length=1 -> 32*512/1 = 16384, clamped to 32.
         assert_eq!(
-            compute_batch_size(1),
+            compute_batch_size_with_caps(1, &caps),
             32,
             "sequence length 1 must clamp to REFERENCE_BATCH_SIZE"
         );

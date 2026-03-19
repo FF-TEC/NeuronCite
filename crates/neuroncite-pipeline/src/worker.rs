@@ -694,6 +694,11 @@ mod tests {
     /// processes at most batch_size texts at a time. This prevents the
     /// memory exhaustion that occurred when hundreds of refinement
     /// sub-chunks were embedded in a single ONNX call.
+    ///
+    /// The expected batch_size is derived from compute_batch_size(512) at
+    /// runtime rather than hardcoded. compute_batch_size uses the host CPU
+    /// core count in its scaling formula, so a fixed expectation would
+    /// fail on machines with different core counts.
     #[tokio::test]
     async fn t_api_020_embed_batch_search_sub_batches() {
         use std::sync::Mutex as StdMutex;
@@ -744,8 +749,7 @@ mod tests {
                 String::new()
             }
 
-            // max_sequence_length defaults to 512, so compute_batch_size
-            // returns 32 (REFERENCE_BATCH_SIZE * 512 / 512 = 32).
+            // max_sequence_length defaults to 512.
         }
 
         let batch_sizes = Arc::new(StdMutex::new(Vec::new()));
@@ -755,9 +759,15 @@ mod tests {
         });
         let handle = spawn_worker(backend, None);
 
-        // Send 100 texts. With max_seq_len=512, batch_size=32.
-        // Expected: 4 sub-batches (32 + 32 + 32 + 4).
-        let texts: Vec<&str> = vec!["test text"; 100];
+        // The backend's max_sequence_length is 512. compute_batch_size(512)
+        // returns a hardware-dependent value (base=32 scaled by CPU cores),
+        // so derive expected sub-batch counts from the actual batch_size.
+        let batch_size = crate::indexer::compute_batch_size(512);
+        let total_texts: usize = 100;
+        let expected_batches = total_texts.div_ceil(batch_size);
+        let remainder = total_texts % batch_size;
+
+        let texts: Vec<&str> = vec!["test text"; total_texts];
         let result = handle
             .embed_batch_search(&texts)
             .await
@@ -765,21 +775,40 @@ mod tests {
 
         assert_eq!(
             result.len(),
-            100,
+            total_texts,
             "must return one embedding per input text"
         );
 
         let recorded = batch_sizes.lock().unwrap();
         assert_eq!(
             recorded.len(),
-            4,
-            "100 texts with batch_size=32 must produce 4 sub-batches, got {:?}",
+            expected_batches,
+            "{total_texts} texts with batch_size={batch_size} must produce \
+             {expected_batches} sub-batches, got {:?}",
             *recorded
         );
-        assert_eq!(recorded[0], 32);
-        assert_eq!(recorded[1], 32);
-        assert_eq!(recorded[2], 32);
-        assert_eq!(recorded[3], 4);
+
+        // All sub-batches except the last must be exactly batch_size.
+        for (i, &size) in recorded.iter().enumerate() {
+            if i < expected_batches - 1 {
+                assert_eq!(
+                    size, batch_size,
+                    "sub-batch {i} must be {batch_size}, got {size}"
+                );
+            } else {
+                // The last sub-batch contains the remainder, or a full batch
+                // if total_texts is evenly divisible.
+                let expected_last = if remainder == 0 {
+                    batch_size
+                } else {
+                    remainder
+                };
+                assert_eq!(
+                    size, expected_last,
+                    "last sub-batch must be {expected_last}, got {size}"
+                );
+            }
+        }
     }
 
     /// T-API-021: embed_batch_search with a small input (below batch_size)

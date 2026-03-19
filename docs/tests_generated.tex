@@ -1093,7 +1093,7 @@ criterion that must hold for the test to pass.
     T-EMB-022 & The ORT Mutex poison recovery pattern compiles and produces a usable guard.
         & Validates the \texttt{unwrap\_or\_else(|p| p.into\_inner())} pattern used in \texttt{ensure\_ort\_library} for Mutex poison recovery. \\
     T-EMB-023 & \texttt{intra\_op\_threads} returns a value within the EP-specific upper bound.
-        & CoreML ≤ 4, CUDA/ROCm/DirectML ≤ 8, CPU ≤ 16. All EPs must return at least 1. \\
+        & CoreML <= 4, CUDA/ROCm/DirectML <= 8, CPU <= 16. All EPs must return at least 1. \\
     T-EMB-024 & Score clamping guards against overflow and non-finite values.
         & Regression test for DEF-4: cross-encoder inference producing extreme float values (\~{}-5.5e15) that propagated as ranking artifacts. The fix clamps scores to [-1000, 1000] and replaces NaN/infinity with -1000. This test verifies the clamping logic directly on f32 -> f64 conversion. \\
     T-EMB-CFG-001 & Every model in the catalog has a valid, non-empty model\_id and a positive vector\_dimension.
@@ -2429,7 +2429,7 @@ criterion that must hold for the test to pass.
     T-API-019 & rerank\_batch returns scores when a reranker is configured.
         & Spawns the worker with a stub reranker and verifies that rerank\_batch returns one score per candidate with the expected values. \\
     T-API-020 & embed\_batch\_search splits large input batches into sub-batches limited by compute\_batch\_size.
-        & Each sub-batch is sent as a separate message to the worker, so the ONNX forward pass processes at most batch\_size texts at a time. This prevents the memory exhaustion that occurred when hundreds of refinement sub-chunks were embedded in a single ONNX call. \\
+        & Each sub-batch is sent as a separate message to the worker, so the ONNX forward pass processes at most batch\_size texts at a time. This prevents the memory exhaustion that occurred when hundreds of refinement sub-chunks were embedded in a single ONNX call. The expected batch\_size is derived from compute\_batch\_size(512) at runtime rather than hardcoded. compute\_batch\_size uses the host CPU core count in its scaling formula, so a fixed expectation would fail on machines with different core counts. \\
     T-API-021 & embed\_batch\_search with a small input (below batch\_size) sends a single message to the worker without splitting.
         & --- \\
     T-API-022 & embed\_batch\_search with empty input returns empty result without sending any messages to the worker.

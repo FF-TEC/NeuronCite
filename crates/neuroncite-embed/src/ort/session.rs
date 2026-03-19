@@ -878,7 +878,7 @@ mod tests {
     }
 
     /// T-EMB-023: `intra_op_threads` returns a value within the EP-specific
-    /// upper bound. CoreML ≤ 4, CUDA/ROCm/DirectML ≤ 8, CPU ≤ 16.
+    /// upper bound. CoreML <= 4, CUDA/ROCm/DirectML <= 8, CPU <= 16.
     /// All EPs must return at least 1.
     #[test]
     fn t_emb_023_intra_op_threads_range() {
