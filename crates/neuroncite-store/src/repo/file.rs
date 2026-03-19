@@ -444,7 +444,7 @@ mod tests {
     /// T-STO-064: find_file_by_session_path returns the file record when it
     /// exists for the given session and path.
     #[test]
-    fn t_sto_011_find_file_by_session_path_existing() {
+    fn t_sto_064_find_file_by_session_path_existing() {
         let (conn, session_id) = setup_db_with_session();
 
         let file_id = insert_file(
@@ -472,7 +472,7 @@ mod tests {
     /// T-STO-065: find_file_by_session_path returns None for a non-existent
     /// file path within the session.
     #[test]
-    fn t_sto_012_find_file_by_session_path_missing() {
+    fn t_sto_065_find_file_by_session_path_missing() {
         let (conn, session_id) = setup_db_with_session();
 
         let found = find_file_by_session_path(&conn, session_id, "/docs/nonexistent.pdf")
@@ -483,7 +483,7 @@ mod tests {
     /// T-STO-066: find_file_by_session_path returns None when the file exists
     /// in a different session but not the queried session.
     #[test]
-    fn t_sto_013_find_file_by_session_path_wrong_session() {
+    fn t_sto_066_find_file_by_session_path_wrong_session() {
         let (conn, session_id) = setup_db_with_session();
 
         insert_file(
@@ -512,7 +512,7 @@ mod tests {
     /// rows. Verifies that deleting a non-existent path returns 0 and that
     /// the correct file is removed when multiple files exist in the session.
     #[test]
-    fn t_sto_009_delete_file_by_session_path() {
+    fn t_sto_062_delete_file_by_session_path() {
         let (conn, session_id) = setup_db_with_session();
 
         // Insert two file records.
@@ -545,7 +545,7 @@ mod tests {
     /// satisfied after cleanup. This simulates the re-indexing scenario where
     /// a stale file record from a previous run blocks a fresh insert.
     #[test]
-    fn t_sto_010_delete_then_reinsert_same_path() {
+    fn t_sto_063_delete_then_reinsert_same_path() {
         let (conn, session_id) = setup_db_with_session();
 
         // First insert.

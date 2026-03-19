@@ -363,7 +363,7 @@ mod tests {
     /// when invoked with /D=<cache_dir>.
     #[cfg(target_os = "windows")]
     #[test]
-    fn t_mcp_039b_probe_checks_tesseract_ocr_subdirectory() {
+    fn t_mcp_093b_probe_checks_tesseract_ocr_subdirectory() {
         let cache_dir = neuroncite_core::paths::runtime_dir().join("tesseract");
         let subdir_exe = cache_dir.join("Tesseract-OCR").join("tesseract.exe");
 
@@ -382,7 +382,7 @@ mod tests {
     /// default Program Files installation directory.
     #[cfg(target_os = "windows")]
     #[test]
-    fn t_mcp_039c_probe_checks_program_files() {
+    fn t_mcp_094c_probe_checks_program_files() {
         let program_files = std::path::Path::new(r"C:\Program Files\Tesseract-OCR\tesseract.exe");
 
         if program_files.is_file() {

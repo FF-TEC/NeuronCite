@@ -1684,7 +1684,7 @@ mod tests {
     /// T-ANNOTATE-229: FallbackExtract MatchMethod variant serializes
     /// to "fallback_extract" in JSON (snake_case).
     #[test]
-    fn t_annotate_070_fallback_extract_serde() {
+    fn t_annotate_229_fallback_extract_serde() {
         let method = MatchMethod::FallbackExtract;
         let json = serde_json::to_string(&method).expect("serialize MatchMethod");
         assert_eq!(json, "\"fallback_extract\"");
@@ -1696,7 +1696,7 @@ mod tests {
 
     /// T-ANNOTATE-239: All MatchMethod variants survive JSON roundtrip.
     #[test]
-    fn t_annotate_071_match_method_json_roundtrip() {
+    fn t_annotate_239_match_method_json_roundtrip() {
         let variants = [
             MatchMethod::Exact,
             MatchMethod::Normalized,
@@ -1716,7 +1716,7 @@ mod tests {
     /// This verifies the `.filter(|c| !c.is_empty())` guard correctly handles
     /// the empty map case.
     #[test]
-    fn t_annotate_080_empty_cache_treated_as_none() {
+    fn t_annotate_240_empty_cache_treated_as_none() {
         let empty_cache: HashMap<usize, String> = HashMap::new();
         // Calling with Some(&empty_cache) should behave as if no cache
         // was provided. The function returns None without attempting
@@ -1735,7 +1735,7 @@ mod tests {
     /// iteration. Verifies that the fallback extraction stage processes
     /// pages in deterministic order regardless of HashMap insertion order.
     #[test]
-    fn t_annotate_081_cached_pages_sorted_by_number() {
+    fn t_annotate_241_cached_pages_sorted_by_number() {
         let mut cache: HashMap<usize, String> = HashMap::new();
         cache.insert(5, "Page five".to_string());
         cache.insert(1, "Page one".to_string());
@@ -1758,7 +1758,7 @@ mod tests {
     /// texts are correctly passed through the normalization and substring
     /// search pipeline.
     #[test]
-    fn t_annotate_082_cached_text_normalized_match() {
+    fn t_annotate_242_cached_text_normalized_match() {
         let mut cache: HashMap<usize, String> = HashMap::new();
         cache.insert(
             1,
@@ -1781,7 +1781,7 @@ mod tests {
     /// a score above the FUZZY_THRESHOLD. Verifies that fuzzy matching works
     /// correctly against cached text with minor differences.
     #[test]
-    fn t_annotate_083_cached_text_fuzzy_match() {
+    fn t_annotate_243_cached_text_fuzzy_match() {
         let cached_text = "The evidence in support of the efficient markets model is extensive and well documented.";
         let quote = "The evidence in support of the efficient market model is extensive and well documented.";
 
@@ -2135,7 +2135,7 @@ mod tests {
     /// and the Levenshtein scoring produces a meaningful similarity measure.
     #[cfg(feature = "ocr")]
     #[test]
-    fn t_annotate_111b_moderate_ocr_errors_scored_by_anchor_algorithm() {
+    fn t_annotate_231b_moderate_ocr_errors_scored_by_anchor_algorithm() {
         // Moderate OCR: only 2 words mangled ("efficient" -> "efflcient",
         // "model" -> "rnodel"), rest intact. 6/8 anchor words match.
         let ocr_text = "The evidence in support of the efflcient markets rnodel is extensive and well documented.";

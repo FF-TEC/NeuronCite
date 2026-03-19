@@ -412,7 +412,7 @@ mod tests {
     /// T-SCH-020: Sanitize wraps each token in double quotes so FTS5 treats
     /// hyphens, colons, and other operator characters as literal text.
     #[test]
-    fn t_sch_010_sanitize_wraps_tokens_in_quotes() {
+    fn t_sch_020_sanitize_wraps_tokens_in_quotes() {
         let result = sanitize_fts5_query("short-term volatility");
         assert_eq!(result, "\"short-term\" \"volatility\"");
     }
@@ -420,7 +420,7 @@ mod tests {
     /// T-SCH-021: Sanitize strips embedded double quotes from tokens to
     /// prevent FTS5 syntax errors from unbalanced quote characters.
     #[test]
-    fn t_sch_011_sanitize_strips_embedded_quotes() {
+    fn t_sch_021_sanitize_strips_embedded_quotes() {
         let result = sanitize_fts5_query("the \"Box-Cox\" family");
         assert_eq!(result, "\"the\" \"Box-Cox\" \"family\"");
     }

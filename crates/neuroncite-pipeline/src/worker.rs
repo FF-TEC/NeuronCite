@@ -478,7 +478,7 @@ mod tests {
     /// T-API-050: WorkerHandle embed_query returns a vector with the correct
     /// dimensionality from the stub backend.
     #[tokio::test]
-    async fn t_api_015_worker_handle_embed_query_returns_vector() {
+    async fn t_api_050_worker_handle_embed_query_returns_vector() {
         let backend = Arc::new(test_support::StubBackend::with_dimension(384));
         let handle = spawn_worker(backend, None);
 
@@ -501,7 +501,7 @@ mod tests {
     /// tokio::spawn inside spawn_worker panics with "there is no reactor
     /// running". This test verifies the guard-based approach works correctly.
     #[test]
-    fn t_api_017_spawn_worker_with_runtime_guard() {
+    fn t_api_052_spawn_worker_with_runtime_guard() {
         let rt = tokio::runtime::Runtime::new().expect("create runtime");
         let _guard = rt.enter();
 
@@ -529,7 +529,7 @@ mod tests {
     /// This test fills both channels and verifies that the high-priority
     /// request completes before the low-priority request.
     #[tokio::test]
-    async fn t_api_016_worker_handle_priority_ordering() {
+    async fn t_api_051_worker_handle_priority_ordering() {
         use std::sync::Arc as StdArc;
         use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -616,7 +616,7 @@ mod tests {
     /// This error is what the MCP and API handlers propagate to the caller
     /// when the user requests reranking without a configured reranker model.
     #[tokio::test]
-    async fn t_api_018_rerank_batch_errors_without_reranker() {
+    async fn t_api_053_rerank_batch_errors_without_reranker() {
         let backend = Arc::new(test_support::StubBackend::default());
         let handle = spawn_worker(backend, None);
 

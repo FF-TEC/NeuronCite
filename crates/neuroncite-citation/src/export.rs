@@ -846,7 +846,7 @@ mod tests {
 
     /// T-CIT-096: Rows without passages produce no annotation CSV entry.
     #[test]
-    fn t_cit_040_no_passages_no_csv() {
+    fn t_cit_096_no_passages_no_csv() {
         let entry = make_submit_entry(Verdict::NotFound, vec![]); // No passages.
         let row = make_done_row("key1", 10, &entry);
 
@@ -859,7 +859,7 @@ mod tests {
 
     /// T-CIT-097: Rows without latex_correction produce no corrections entry.
     #[test]
-    fn t_cit_041_no_correction_no_entry() {
+    fn t_cit_097_no_correction_no_entry() {
         let entry = make_submit_entry(Verdict::Supported, vec![]); // No correction.
         let row = make_done_row("key1", 10, &entry);
 
@@ -874,7 +874,7 @@ mod tests {
 
     /// T-CIT-098: Full-detail JSON contains all verification fields for done rows.
     #[test]
-    fn t_cit_042_full_detail_all_fields() {
+    fn t_cit_098_full_detail_all_fields() {
         let mut entry = make_submit_entry(
             Verdict::Partial,
             vec![PassageRef {
@@ -954,7 +954,7 @@ mod tests {
 
     /// T-CIT-099: Full-detail JSON includes pending rows with null result.
     #[test]
-    fn t_cit_043_full_detail_pending_row() {
+    fn t_cit_099_full_detail_pending_row() {
         let row = CitationRow {
             id: 5,
             job_id: "test-job".to_string(),
@@ -996,7 +996,7 @@ mod tests {
 
     /// T-CIT-109: Data CSV has 38 columns in correct order.
     #[test]
-    fn t_cit_060_data_csv_columns() {
+    fn t_cit_109_data_csv_columns() {
         let entry = make_submit_entry(
             Verdict::Supported,
             vec![PassageRef {
@@ -1028,7 +1028,7 @@ mod tests {
 
     /// T-CIT-110: Data CSV sorts by tex_line ascending.
     #[test]
-    fn t_cit_061_data_csv_sorted() {
+    fn t_cit_110_data_csv_sorted() {
         let entry1 = make_submit_entry(Verdict::Supported, vec![]);
         let entry2 = make_submit_entry(Verdict::Partial, vec![]);
 
@@ -1055,7 +1055,7 @@ mod tests {
 
     /// T-CIT-111: Excel workbook generates valid bytes.
     #[test]
-    fn t_cit_062_excel_generates_bytes() {
+    fn t_cit_111_excel_generates_bytes() {
         let entry = make_submit_entry(
             Verdict::Supported,
             vec![PassageRef {
@@ -1078,7 +1078,7 @@ mod tests {
 
     /// T-CIT-112: Excel workbook handles multiple verdicts with different row colors.
     #[test]
-    fn t_cit_063_excel_multiple_verdicts() {
+    fn t_cit_112_excel_multiple_verdicts() {
         let entries = [
             make_submit_entry(Verdict::Supported, vec![]),
             make_submit_entry(Verdict::Partial, vec![]),
@@ -1107,7 +1107,7 @@ mod tests {
 
     /// T-CIT-113: Verdict row_bg_hex and badge_hex return valid hex strings.
     #[test]
-    fn t_cit_064_verdict_color_methods() {
+    fn t_cit_113_verdict_color_methods() {
         let verdicts = [
             Verdict::Supported,
             Verdict::Partial,
@@ -1137,7 +1137,7 @@ mod tests {
 
     /// T-CIT-114: other_source_list serialized as JSON in data CSV.
     #[test]
-    fn t_cit_065_other_source_list_in_csv() {
+    fn t_cit_114_other_source_list_in_csv() {
         let mut entry = make_submit_entry(Verdict::Partial, vec![]);
         entry.confidence = 0.70;
         entry.other_source_list = vec![OtherSourceEntry {
@@ -1161,7 +1161,7 @@ mod tests {
 
     /// T-CIT-115: better_source serialized as JSON array in data CSV.
     #[test]
-    fn t_cit_066_better_source_array_in_csv() {
+    fn t_cit_115_better_source_array_in_csv() {
         let mut entry = make_submit_entry(Verdict::WrongSource, vec![]);
         entry.better_source = vec!["source_a".to_string(), "source_b".to_string()];
         entry.other_source_list = vec![OtherSourceEntry {
@@ -1194,7 +1194,7 @@ mod tests {
     /// Columns 26, 30, 34 (0-indexed) are passage_1_location, passage_2_location,
     /// passage_3_location respectively.
     #[test]
-    fn t_cit_067_passage_location_in_csv() {
+    fn t_cit_116_passage_location_in_csv() {
         let entry = make_submit_entry(
             Verdict::Supported,
             vec![

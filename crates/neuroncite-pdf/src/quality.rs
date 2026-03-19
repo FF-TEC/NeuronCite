@@ -251,7 +251,7 @@ mod tests {
     /// Constructs a string dominated by digits and punctuation so that the
     /// alphabetic character ratio falls below the threshold.
     #[test]
-    fn t_pdf_009_low_alphabetic_ratio_triggers_fallback() {
+    fn t_pdf_047_low_alphabetic_ratio_triggers_fallback() {
         // 100 digits, 5 alphabetic characters -> ratio = 5/105 ~= 0.048
         let text = format!("{}{}", "0123456789".repeat(10), "abcde");
 
@@ -273,7 +273,7 @@ mod tests {
     /// triggers fallback. Constructs a string where more than 5% of characters
     /// are U+FFFD replacement characters.
     #[test]
-    fn t_pdf_010_high_replacement_char_ratio_triggers_fallback() {
+    fn t_pdf_049_high_replacement_char_ratio_triggers_fallback() {
         // 80 alphabetic characters + 20 replacement characters = ratio 20/100 = 0.2
         let text = format!("{}{}", "a".repeat(80), "\u{FFFD}".repeat(20));
 
@@ -295,7 +295,7 @@ mod tests {
     /// fallback. Constructs a string where line break characters make up more
     /// than 15% of the total character count.
     #[test]
-    fn t_pdf_011_high_line_break_density_triggers_fallback() {
+    fn t_pdf_050_high_line_break_density_triggers_fallback() {
         // 5 characters per line + 1 newline = 6 chars per unit.
         // With 10 units: 50 alpha + 10 newlines = 60 total.
         // Line break density = 10/60 ~= 0.167 > 0.15.
@@ -319,7 +319,7 @@ mod tests {
     /// fallback. Constructs a string of many repeated tokens so that the
     /// unique/total ratio falls below the threshold.
     #[test]
-    fn t_pdf_012_low_unique_token_ratio_triggers_fallback() {
+    fn t_pdf_051_low_unique_token_ratio_triggers_fallback() {
         // Single word "garbage" repeated 100 times -> unique tokens = 1,
         // total tokens = 100, ratio = 0.01 < 0.05.
         let text = vec!["garbage"; 100].join(" ");
@@ -379,7 +379,7 @@ mod tests {
     /// Verifies the single-pass implementation correctly classifies
     /// representative natural language text as passing.
     #[test]
-    fn t_pdf_028b_academic_text_passes_quality() {
+    fn t_pdf_052b_academic_text_passes_quality() {
         let text = "In this paper, we present a statistical framework \
                     for hypothesis testing in high-dimensional data. \
                     Our approach leverages Bayesian inference to compute \
@@ -406,7 +406,7 @@ mod tests {
     /// still alphabetic and form varied tokens. Only the function word check
     /// detects the absence of recognizable English words.
     #[test]
-    fn t_pdf_029_caesar_shifted_text_triggers_fallback() {
+    fn t_pdf_053_caesar_shifted_text_triggers_fallback() {
         // Simulate Caesar-cipher-shifted text: shift each character in a
         // real English paragraph by +3 positions. The result is alphabetic
         // but contains no recognizable English words.
@@ -462,7 +462,7 @@ mod tests {
     /// exempt from the function word check. Table captions, equation labels,
     /// and headers may legitimately contain no function words.
     #[test]
-    fn t_pdf_030_short_text_exempt_from_function_word_check() {
+    fn t_pdf_054_short_text_exempt_from_function_word_check() {
         // 10 tokens with no function words -- should still pass because
         // the fragment is below the minimum token threshold.
         let text = "GARCH(1,1) volatility estimation results Table 5.2 \
@@ -492,7 +492,7 @@ mod tests {
     /// entries). This text contains alphabetic characters and varied tokens
     /// but zero English function words.
     #[test]
-    fn t_pdf_031_real_garbled_slash_prefix_text_triggers_fallback() {
+    fn t_pdf_055_real_garbled_slash_prefix_text_triggers_fallback() {
         // Simulated garbled output pattern observed in production PDFs.
         // Each "word" has a leading slash and shifted characters. The text
         // has 40+ tokens but zero function words.
@@ -518,7 +518,7 @@ mod tests {
     /// function words in mixed-case text. The comparison is case-insensitive,
     /// so "The", "THE", and "the" all count as function words.
     #[test]
-    fn t_pdf_032_function_word_case_insensitive() {
+    fn t_pdf_056_function_word_case_insensitive() {
         // Text with function words in various cases.
         let text = "The analysis OF data IN This study IS based ON \
                     empirical evidence FROM multiple sources AND The \

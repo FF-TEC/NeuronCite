@@ -231,7 +231,7 @@ mod tests {
     /// `extract_with_pdf_extract` returns at least one `PageText` entry
     /// annotated with the `PdfExtract` backend.
     #[test]
-    fn t_pdf_006_extracts_text_from_well_formed_pdf() {
+    fn t_pdf_057_extracts_text_from_well_formed_pdf() {
         let pdf_bytes = minimal_pdf_with_text("Hello World");
 
         let mut tmp = NamedTempFile::with_suffix(".pdf").expect("failed to create temp file");
@@ -271,7 +271,7 @@ mod tests {
     /// correct 1-indexed page number, rather than all pages being reported
     /// as page 1.
     #[test]
-    fn t_pdf_010_lopdf_per_page_produces_correct_page_numbers() {
+    fn t_pdf_048_lopdf_per_page_produces_correct_page_numbers() {
         // Build a minimal 3-page PDF. Each page has distinct content text
         // so we can verify that page boundaries are correct.
         let pdf_bytes =
@@ -318,7 +318,7 @@ mod tests {
     /// Verifies that `extract_with_formfeed_split` filters out empty trailing
     /// segments produced by a trailing form-feed character.
     #[test]
-    fn t_pdf_011_formfeed_split_filters_empty_trailing_pages() {
+    fn t_pdf_058_formfeed_split_filters_empty_trailing_pages() {
         let abs_path = std::path::PathBuf::from("/test/doc.pdf");
 
         // Simulate pdf-extract output with a trailing form-feed:
@@ -350,7 +350,7 @@ mod tests {
 
     /// T-PDF-059: Empty file returns empty page list without panicking.
     #[test]
-    fn t_pdf_012_empty_file_returns_empty() {
+    fn t_pdf_059_empty_file_returns_empty() {
         let tmp = NamedTempFile::with_suffix(".pdf").expect("failed to create temp file");
         let result = extract_with_pdf_extract(tmp.path());
 

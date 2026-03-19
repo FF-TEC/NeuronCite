@@ -93,7 +93,7 @@ mod tests {
     /// all CI environments, this test is gated behind `#[cfg(feature = "pdfium")]`
     /// at the module level.
     #[test]
-    fn t_pdf_007_pdfium_multi_column_extraction() {
+    fn t_pdf_060_pdfium_multi_column_extraction() {
         // Without a real pdfium shared library installed, this test would fail
         // at the library binding step. The test structure demonstrates the
         // expected call pattern and verifies error handling.

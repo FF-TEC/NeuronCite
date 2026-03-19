@@ -1297,7 +1297,7 @@ mod tests {
     /// T-MCP-117: The `neuroncite_batch_search` tool definition exists and
     /// declares `session_id` and `queries` as required parameters.
     #[test]
-    fn t_mcp_029_batch_search_tool_definition() {
+    fn t_mcp_117_batch_search_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1327,7 +1327,7 @@ mod tests {
     /// T-MCP-118: The `neuroncite_files` tool definition exists and declares
     /// `session_id` as the sole required parameter.
     #[test]
-    fn t_mcp_030_files_tool_definition() {
+    fn t_mcp_118_files_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1345,7 +1345,7 @@ mod tests {
     /// declares `session_id` as required, with optional `label`, `tags`, and
     /// `metadata` parameters.
     #[test]
-    fn t_mcp_031_session_update_tool_definition() {
+    fn t_mcp_119_session_update_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1395,7 +1395,7 @@ mod tests {
     /// T-MCP-120: The `neuroncite_search` tool description mentions `file_id`
     /// so AI agents know the field is available in search results.
     #[test]
-    fn t_mcp_032_search_description_mentions_file_id() {
+    fn t_mcp_120_search_description_mentions_file_id() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1440,7 +1440,7 @@ mod tests {
     /// T-MCP-100: `neuroncite_citation_rows` tool exists with job_id as the
     /// sole required parameter, and optional status/offset/limit properties.
     #[test]
-    fn t_mcp_068_citation_rows_has_job_id_required() {
+    fn t_mcp_100_citation_rows_has_job_id_required() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1463,7 +1463,7 @@ mod tests {
     /// T-MCP-101: `neuroncite_citation_claim` tool includes optional batch_id
     /// in its properties while keeping only job_id as required.
     #[test]
-    fn t_mcp_069_citation_claim_has_optional_batch_id() {
+    fn t_mcp_101_citation_claim_has_optional_batch_id() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1498,7 +1498,7 @@ mod tests {
     /// with `pdf_path` as the sole required parameter and an optional
     /// `page_number` property.
     #[test]
-    fn t_mcp_035_inspect_annotations_tool_definition() {
+    fn t_mcp_121_inspect_annotations_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1532,7 +1532,7 @@ mod tests {
     /// T-MCP-112: `neuroncite_citation_create` tool includes optional dry_run
     /// and file_overrides in its properties.
     #[test]
-    fn t_mcp_070_citation_create_has_dry_run_and_file_overrides() {
+    fn t_mcp_112_citation_create_has_dry_run_and_file_overrides() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1578,7 +1578,7 @@ mod tests {
     /// the schema level. Validation of "at least one" is handled by the
     /// handler at runtime, not by the JSON Schema.
     #[test]
-    fn t_mcp_071_session_delete_no_required_params() {
+    fn t_mcp_113_session_delete_no_required_params() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1727,7 +1727,7 @@ mod tests {
     /// `append` boolean properties. These parameters are not in the required
     /// array, and the description mentions both modes.
     #[test]
-    fn t_mcp_075_annotate_has_dry_run_and_append() {
+    fn t_mcp_102_annotate_has_dry_run_and_append() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1784,7 +1784,7 @@ mod tests {
     /// because HTML preview uses url or file_id instead. The chunk_strategy
     /// property must have a 4-value enum.
     #[test]
-    fn t_mcp_076_preview_chunks_tool_definition() {
+    fn t_mcp_103_preview_chunks_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1846,7 +1846,7 @@ mod tests {
     /// `session_id` and `files` as required parameters. The `files` property
     /// must be typed as an array of strings.
     #[test]
-    fn t_mcp_077_index_add_tool_definition() {
+    fn t_mcp_104_index_add_tool_definition() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1968,7 +1968,7 @@ mod tests {
     /// `session_id` to inform AI agents that each result is tagged with
     /// its source session.
     #[test]
-    fn t_mcp_080_multi_search_description_mentions_session_id() {
+    fn t_mcp_105_multi_search_description_mentions_session_id() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -1984,7 +1984,7 @@ mod tests {
     /// T-MCP-106: The `neuroncite_reranker_load` description mentions
     /// `reranker_available` to inform AI agents to check health after loading.
     #[test]
-    fn t_mcp_081_reranker_load_description_mentions_reranker_available() {
+    fn t_mcp_106_reranker_load_description_mentions_reranker_available() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -2000,7 +2000,7 @@ mod tests {
     /// T-MCP-107: The `neuroncite_index_add` description mentions change
     /// detection to inform AI agents about the skip-unchanged behavior.
     #[test]
-    fn t_mcp_082_index_add_description_mentions_change_detection() {
+    fn t_mcp_107_index_add_description_mentions_change_detection() {
         let tools = all_tools();
         let tool = tools
             .iter()
@@ -2016,7 +2016,7 @@ mod tests {
     /// T-MCP-108: The `neuroncite_preview_chunks` description mentions
     /// "without" database writes to clarify this is a stateless preview.
     #[test]
-    fn t_mcp_083_preview_chunks_description_mentions_no_db_writes() {
+    fn t_mcp_108_preview_chunks_description_mentions_no_db_writes() {
         let tools = all_tools();
         let tool = tools
             .iter()

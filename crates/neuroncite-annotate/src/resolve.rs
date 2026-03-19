@@ -364,7 +364,7 @@ mod tests {
     /// regex must capture the LAST parenthesized group as the author,
     /// regardless of how many parenthesized sections appear in the title.
     #[test]
-    fn t_annotate_060_multiple_parenthesized_groups() {
+    fn t_annotate_224_multiple_parenthesized_groups() {
         let meta = extract_metadata(
             "Information Theory (IT) and an Extension (EXT) of the Maximum Likelihood Principle (Akaike, 1973)",
         );
@@ -378,7 +378,7 @@ mod tests {
     /// subtitle parentheses. Verifies that the greedy regex does not
     /// break the common case.
     #[test]
-    fn t_annotate_061_single_author_group_still_works() {
+    fn t_annotate_225_single_author_group_still_works() {
         let meta =
             extract_metadata("The Variation of Certain Speculative Prices (Mandelbrot, 1963)");
         let (title, author) = meta.unwrap();
@@ -390,7 +390,7 @@ mod tests {
     /// parenthesized subtitle. Both stripping and greedy matching
     /// must work together.
     #[test]
-    fn t_annotate_062_brackets_and_subtitle() {
+    fn t_annotate_226_brackets_and_subtitle() {
         let meta = extract_metadata(
             "Computation and Analysis of Multiple Structural Change Models (Bai & Perron, 2003) [PDF preprint version]",
         );
@@ -401,7 +401,7 @@ mod tests {
 
     /// T-ANNOTATE-227: Filename with ampersand in the author field.
     #[test]
-    fn t_annotate_063_ampersand_in_author() {
+    fn t_annotate_227_ampersand_in_author() {
         let meta = extract_metadata(
             "A Simple Implicit Measure of the Effective Bid-Ask Spread in an Efficient Market (Roll, 1984)",
         );
@@ -416,7 +416,7 @@ mod tests {
     /// The rfind-based approach splits on the LAST comma, correctly
     /// identifying the year and preserving the full author string.
     #[test]
-    fn t_annotate_064_comma_separated_multi_authors() {
+    fn t_annotate_228_comma_separated_multi_authors() {
         let meta =
             extract_metadata("Quantitative Risk Management (McNeil, Frey & Embrechts, 2015)");
         let (title, author) = meta.unwrap();
@@ -490,7 +490,7 @@ mod tests {
     /// T-ANNOTATE-233: strip_subtitle extracts the main title before a
     /// hyphen-with-spaces separator.
     #[test]
-    fn t_annotate_070_strip_subtitle_hyphen_spaces() {
+    fn t_annotate_233_strip_subtitle_hyphen_spaces() {
         let result = strip_subtitle("Data Science - From Theory to Practice");
         assert_eq!(result, Some("Data Science".to_string()));
     }
@@ -498,7 +498,7 @@ mod tests {
     /// T-ANNOTATE-234: strip_subtitle returns None when no subtitle separator
     /// is present.
     #[test]
-    fn t_annotate_071_strip_subtitle_no_separator() {
+    fn t_annotate_234_strip_subtitle_no_separator() {
         let result = strip_subtitle("Efficient Capital Markets");
         assert!(result.is_none());
     }
@@ -506,7 +506,7 @@ mod tests {
     /// T-ANNOTATE-235: strip_subtitle does not match hyphens without spaces.
     /// This prevents false positives on compound words like "Bid-Ask".
     #[test]
-    fn t_annotate_072_strip_subtitle_no_match_compound_words() {
+    fn t_annotate_235_strip_subtitle_no_match_compound_words() {
         let result = strip_subtitle("A Simple Implicit Measure of the Effective Bid-Ask Spread");
         assert!(
             result.is_none(),
@@ -520,7 +520,7 @@ mod tests {
     /// Concepts, Techniques and Tools" scored below the 0.80 Jaro-Winkler
     /// threshold against the filename "Quantitative Risk Management".
     #[test]
-    fn t_annotate_073_subtitle_title_matches_filename_without_subtitle() {
+    fn t_annotate_236_subtitle_title_matches_filename_without_subtitle() {
         let row = InputRow {
             title: "Quantitative Risk Management: Concepts, Techniques and Tools".into(),
             author: "McNeil, Frey & Embrechts".into(),
@@ -548,7 +548,7 @@ mod tests {
     /// T-ANNOTATE-237: Title without subtitle still matches correctly
     /// (no regression from the subtitle stripping logic).
     #[test]
-    fn t_annotate_074_title_without_subtitle_still_matches() {
+    fn t_annotate_237_title_without_subtitle_still_matches() {
         let row = InputRow {
             title: "Efficient Capital Markets".into(),
             author: "Fama".into(),
@@ -575,7 +575,7 @@ mod tests {
     /// T-ANNOTATE-238: strip_subtitle returns None for empty main title
     /// (colon at start of string).
     #[test]
-    fn t_annotate_075_strip_subtitle_empty_main_title() {
+    fn t_annotate_238_strip_subtitle_empty_main_title() {
         let result = strip_subtitle(": Just a Subtitle");
         assert!(
             result.is_none(),

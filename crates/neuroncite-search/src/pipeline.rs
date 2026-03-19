@@ -549,7 +549,7 @@ mod tests {
     /// - >= 0.60 -> "low"
     /// - <  0.60 -> "marginal"
     #[test]
-    fn t_sch_013_relevance_label_boundary_values() {
+    fn t_sch_023_relevance_label_boundary_values() {
         assert_eq!(relevance_label(1.0), "high");
         assert_eq!(relevance_label(0.82), "high");
         assert_eq!(relevance_label(0.819), "medium");
@@ -564,7 +564,7 @@ mod tests {
     /// can occur with cosine similarity for non-normalized vectors and must
     /// return "marginal" without panic.
     #[test]
-    fn t_sch_014_relevance_label_negative_score() {
+    fn t_sch_024_relevance_label_negative_score() {
         assert_eq!(relevance_label(-0.5), "marginal");
         assert_eq!(relevance_label(-1.0), "marginal");
     }
@@ -572,7 +572,7 @@ mod tests {
     /// T-SCH-022: Reranker score replaces RRF score. When reranking is active,
     /// the final score of each result equals the reranker score, not the RRF score.
     #[test]
-    fn t_sch_012_reranker_score_replaces_rrf() {
+    fn t_sch_022_reranker_score_replaces_rrf() {
         let (conn, index, embeddings, _ids, session_id) = setup_pipeline_env();
 
         let reranker = MockReranker {

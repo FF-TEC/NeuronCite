@@ -1376,7 +1376,7 @@ mod tests {
 
     /// T-MCP-122: generate_citation_key without year produces author-only key.
     #[test]
-    fn t_mcp_060_citation_key_without_year() {
+    fn t_mcp_122_citation_key_without_year() {
         let meta = parse_filename_metadata("Econometrics (Hansen).pdf");
         let key = generate_citation_key(&meta, 1, 1);
         assert_eq!(key, "hansen");
@@ -1386,7 +1386,7 @@ mod tests {
     /// Regression test ensuring the PDF path is in the standard 'file' field
     /// that reference managers (Zotero, Mendeley, JabRef) recognize.
     #[test]
-    fn t_mcp_061_bibtex_uses_file_field() {
+    fn t_mcp_123_bibtex_uses_file_field() {
         let result = neuroncite_core::SearchResult {
             score: 0.80,
             vector_score: 0.75,
@@ -1420,7 +1420,7 @@ mod tests {
     /// T-MCP-098: split_filename_authors correctly handles comma+ampersand
     /// author separators. The comma separates authors, NOT "Last, First" pairs.
     #[test]
-    fn t_mcp_063_split_filename_authors_comma_ampersand() {
+    fn t_mcp_098_split_filename_authors_comma_ampersand() {
         // Three authors with comma separator before ampersand.
         let authors = split_filename_authors("McNeil, Frey & Embrechts");
         assert_eq!(authors, vec!["McNeil", "Frey", "Embrechts"]);
@@ -1448,7 +1448,7 @@ mod tests {
     /// formatted as "McNeil, Frey and Embrechts", treating "Frey" as the
     /// given name of "McNeil".
     #[test]
-    fn t_mcp_064_bibtex_comma_separated_authors() {
+    fn t_mcp_099_bibtex_comma_separated_authors() {
         let result = neuroncite_core::SearchResult {
             score: 0.80,
             vector_score: 0.75,
@@ -1490,7 +1490,7 @@ mod tests {
     /// Regression test for the bug where "McNeil, Frey" was parsed as
     /// {"family": "McNeil", "given": "Frey"} instead of two separate authors.
     #[test]
-    fn t_mcp_065_csl_json_comma_separated_authors() {
+    fn t_mcp_109_csl_json_comma_separated_authors() {
         let result = neuroncite_core::SearchResult {
             score: 0.80,
             vector_score: 0.75,
@@ -1537,7 +1537,7 @@ mod tests {
     /// T-MCP-110: BibTeX export deduplicates cite-keys when multiple results
     /// come from the same PDF. Duplicate keys get a letter suffix (a, b, c, ...).
     #[test]
-    fn t_mcp_066_bibtex_duplicate_key_disambiguation() {
+    fn t_mcp_110_bibtex_duplicate_key_disambiguation() {
         let make_result = |page_start: usize, page_end: usize| neuroncite_core::SearchResult {
             score: 0.80,
             vector_score: 0.75,
@@ -1583,7 +1583,7 @@ mod tests {
 
     /// T-MCP-111: CSL-JSON export deduplicates IDs the same way as BibTeX.
     #[test]
-    fn t_mcp_067_csl_json_duplicate_id_disambiguation() {
+    fn t_mcp_111_csl_json_duplicate_id_disambiguation() {
         let make_result = |page_start: usize| neuroncite_core::SearchResult {
             score: 0.80,
             vector_score: 0.75,
@@ -1616,7 +1616,7 @@ mod tests {
     /// T-MCP-124: CSL-JSON uses standard "report" type instead of the
     /// non-standard "document" type for entries without year. Regression test.
     #[test]
-    fn t_mcp_062_csl_json_standard_report_type() {
+    fn t_mcp_124_csl_json_standard_report_type() {
         let result = neuroncite_core::SearchResult {
             score: 0.70,
             vector_score: 0.65,

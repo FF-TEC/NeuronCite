@@ -13,7 +13,7 @@ dependencies), validate_schemas.py (database schema tables, columns, indexes,
 triggers), and validate_consistency.py (MCP tools, API endpoints, CLI
 subcommands, crate counts).
 
-Validation checks (10 categories):
+Validation checks (11 categories):
 
   1.  test_id_duplicates       (error)   No duplicate test IDs in LaTeX or code
   2.  test_id_sequential       (warning) IDs within each prefix are sequential
@@ -25,6 +25,7 @@ Validation checks (10 categories):
   8.  undocumented_prefixes    (error)   Every code prefix has a LaTeX catalog
   9.  unit_crate_counts        (error)   Per-crate summary counts match catalog
   10. summary_caption_match    (error)   Summary body total matches caption
+  11. fn_name_doc_id           (error)   Function name ID matches doc-comment ID
 
 Exit codes:
   0  All checks passed (no errors; warnings allowed unless --strict).
@@ -693,6 +694,120 @@ def map_code_test_files(root: Path) -> dict[str, list[str]]:
     return id_to_files
 
 
+def _doc_id_to_prefix_number(doc_id: str) -> tuple[str, str]:
+    """Extract the lowercase prefix and numeric part from a doc-comment test ID.
+
+    ``T-STO-061``       returns ``("sto", "061")``.
+    ``T-ANNOTATE-229``  returns ``("annotate", "229")``.
+    ``T-MCP-BATCH-001`` returns ``("mcp_batch", "001")``.
+    """
+    rest = doc_id[2:]  # strip leading "T-"
+    m = re.match(r"(.+)-(\d{3}[a-z]?)$", rest)
+    if not m:
+        return "", ""
+    return m.group(1).lower().replace("-", "_"), m.group(2)
+
+
+def _fn_name_to_prefix_number(fn_name: str) -> tuple[str, str] | None:
+    """Extract prefix and numeric part from a test function name.
+
+    ``t_sto_061_desc``       returns ``("sto", "061")``.
+    ``t_annotate_229_desc``  returns ``("annotate", "229")``.
+    ``t_mcp_batch_001_desc`` returns ``("mcp_batch", "001")``.
+
+    Returns None if the function name does not follow the expected pattern.
+    """
+    parts = fn_name.split("_")
+    if not parts or parts[0] != "t":
+        return None
+    for i in range(1, len(parts)):
+        if re.fullmatch(r"\d{3}[a-z]?", parts[i]):
+            prefix = "_".join(parts[1:i])
+            number = parts[i]
+            return prefix, number
+    return None
+
+
+# Regex matching a test function definition line (optional async keyword)
+_FN_DEF_RE = re.compile(
+    r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+(t_\w+)\s*\("
+)
+
+
+def check_fn_name_matches_doc_id(root: Path) -> list[Diagnostic]:
+    """Check 11: Verify that each test function name's numeric ID matches
+    the test ID in its preceding doc comment.
+
+    The doc-comment test ID (e.g., T-STO-061) is the canonical identifier
+    used in the LaTeX documentation. The function name follows the pattern
+    ``t_{prefix}_{number}_{description}``, and the number portion must match
+    the doc-comment ID. A mismatch means the LaTeX traceability table points
+    to the wrong function name.
+
+    Args:
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of Diagnostic instances for any mismatches found.
+    """
+    crates_dir = root / "crates"
+    diagnostics: list[Diagnostic] = []
+    doc_id_re = re.compile(
+        r"///\s+(T-[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{3}[a-z]?):"
+    )
+
+    for rs_file in sorted(crates_dir.rglob("*.rs")):
+        try:
+            lines = rs_file.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        rel_path = str(rs_file.relative_to(root)).replace("\\", "/")
+
+        pending_doc_id: str | None = None
+        pending_line: int = 0
+        countdown: int = 0
+
+        for line_no, line in enumerate(lines, start=1):
+            doc_match = doc_id_re.search(line)
+            if doc_match:
+                pending_doc_id = doc_match.group(1)
+                pending_line = line_no
+                countdown = 15
+                continue
+
+            if pending_doc_id is not None:
+                countdown -= 1
+                if countdown <= 0:
+                    pending_doc_id = None
+                    continue
+
+                fn_match = _FN_DEF_RE.match(line)
+                if fn_match:
+                    fn_name = fn_match.group(1)
+                    parsed = _fn_name_to_prefix_number(fn_name)
+                    if parsed is not None:
+                        fn_prefix, fn_number = parsed
+                        doc_prefix, doc_number = _doc_id_to_prefix_number(
+                            pending_doc_id,
+                        )
+                        if fn_prefix == doc_prefix and fn_number != doc_number:
+                            diagnostics.append(Diagnostic(
+                                level="error",
+                                category="fn_name_doc_id",
+                                section="traceability",
+                                detail=(
+                                    f"{rel_path}:{pending_line} documents "
+                                    f"{pending_doc_id}, but the test function "
+                                    f"at line {line_no} is {fn_name} "
+                                    f"(number {fn_number} != {doc_number})"
+                                ),
+                            ))
+                    pending_doc_id = None
+
+    return diagnostics
+
+
 # ---------------------------------------------------------------------------
 # Validation check functions
 # ---------------------------------------------------------------------------
@@ -1301,7 +1416,7 @@ def format_json(diagnostics: list[Diagnostic]) -> str:
 # ---------------------------------------------------------------------------
 
 def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
-    """Run all 10 validation checks and return the combined diagnostics.
+    """Run all 11 validation checks and return the combined diagnostics.
 
     Reads the LaTeX document and scans the Rust source tree for test IDs.
     Parses all four LaTeX catalog tables and the summary table, then
@@ -1444,6 +1559,9 @@ def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
     # Check 10: Summary caption match
     if summary:
         diagnostics.extend(check_summary_caption_match(summary))
+
+    # Check 11: Function name matches doc comment ID
+    diagnostics.extend(check_fn_name_matches_doc_id(root_path))
 
     return diagnostics
 

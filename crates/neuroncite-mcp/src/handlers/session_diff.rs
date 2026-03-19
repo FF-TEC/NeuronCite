@@ -138,7 +138,7 @@ pub async fn handle(
 mod tests {
     /// T-MCP-114: session_diff handler rejects same session IDs.
     #[test]
-    fn t_mcp_075_session_diff_rejects_same_session() {
+    fn t_mcp_114_session_diff_rejects_same_session() {
         let params = serde_json::json!({
             "session_a": 1,
             "session_b": 1,
@@ -150,7 +150,7 @@ mod tests {
 
     /// T-MCP-115: session_diff handler requires session_a parameter.
     #[test]
-    fn t_mcp_076_session_diff_requires_session_a() {
+    fn t_mcp_115_session_diff_requires_session_a() {
         let params = serde_json::json!({
             "session_b": 2,
         });

@@ -216,7 +216,7 @@ mod tests {
     /// had a latent underflow bug on separator offsets; the O(log n) version
     /// handles this correctly.
     #[test]
-    fn t_core_023b_separator_boundary_maps_to_page_end() {
+    fn t_core_057b_separator_boundary_maps_to_page_end() {
         let byte_counts = [80, 120, 60];
         // Byte 80 is the separator between page 1 and page 2.
         // The O(log n) implementation maps this to (page 1, offset 80),
@@ -229,7 +229,7 @@ mod tests {
     /// T-CORE-058c: Single-page exclusive-end boundary. For a single page of
     /// 100 bytes, offset 100 (one past end) maps to (1, 100).
     #[test]
-    fn t_core_023c_single_page_exclusive_end() {
+    fn t_core_058c_single_page_exclusive_end() {
         let byte_counts = [100];
         let (page, local_offset) = resolve_page(&byte_counts, 100).unwrap();
         assert_eq!(page, 1);

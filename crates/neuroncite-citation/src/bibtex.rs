@@ -416,7 +416,7 @@ mod tests {
     /// T-CIT-100: Entry with url field. The url field is extracted and
     /// stored in the BibEntry struct for source acquisition.
     #[test]
-    fn t_cit_019_url_field_extracted() {
+    fn t_cit_100_url_field_extracted() {
         let bib = r#"
 @article{fama1970,
     author = {Fama, Eugene F.},
@@ -436,7 +436,7 @@ mod tests {
     /// T-CIT-101: Entry with doi field. The doi field is extracted for
     /// resolving source URLs via https://doi.org/{doi}.
     #[test]
-    fn t_cit_020_doi_field_extracted() {
+    fn t_cit_101_doi_field_extracted() {
         let bib = r#"
 @article{black1973,
     author = {Black, Fischer and Scholes, Myron},
@@ -453,7 +453,7 @@ mod tests {
     /// T-CIT-102: Entry with both url and doi fields. Both are extracted
     /// independently and can coexist in the same BibEntry.
     #[test]
-    fn t_cit_021_url_and_doi_coexist() {
+    fn t_cit_102_url_and_doi_coexist() {
         let bib = r#"
 @article{mandelbrot1963,
     author = {Mandelbrot, Benoit B.},
@@ -477,7 +477,7 @@ mod tests {
     /// T-CIT-103: Entry without url and doi fields. Both fields are None
     /// when absent from the BibTeX source.
     #[test]
-    fn t_cit_022_missing_url_and_doi() {
+    fn t_cit_103_missing_url_and_doi() {
         let bib = r#"
 @article{roll1984,
     author = {Roll, Richard},
@@ -494,7 +494,7 @@ mod tests {
     /// T-CIT-104: URL field with quote-delimited value. The parser handles
     /// both brace-delimited and quote-delimited url values.
     #[test]
-    fn t_cit_023_url_quote_delimited() {
+    fn t_cit_104_url_quote_delimited() {
         let bib = r#"
 @article{test_url,
     author = {Test Author},

@@ -641,7 +641,7 @@ mod tests {
     /// returns that label. Calling it again with `None` clears the label
     /// back to NULL.
     #[test]
-    fn t_sto_019_session_label_lifecycle() {
+    fn t_sto_088_session_label_lifecycle() {
         let conn = setup_db();
         let config = test_config();
 
@@ -678,7 +678,7 @@ mod tests {
     /// T-STO-089: `update_session_label` returns 0 rows affected when called
     /// with a non-existent session ID (no error, just zero updates).
     #[test]
-    fn t_sto_020_update_label_nonexistent_session() {
+    fn t_sto_089_update_label_nonexistent_session() {
         let conn = setup_db();
 
         let updated = update_session_label(&conn, 99999, Some("Ghost"))
@@ -693,7 +693,7 @@ mod tests {
     /// Verifies that the label column is correctly projected in the listing
     /// query, both for sessions with and without labels.
     #[test]
-    fn t_sto_021_list_sessions_includes_label() {
+    fn t_sto_090_list_sessions_includes_label() {
         let conn = setup_db();
 
         let config_a = IndexConfig {
@@ -738,7 +738,7 @@ mod tests {
     /// T-STO-091: `find_session` returns the correct ID for a matching config
     /// and `None` for a config that has no matching session.
     #[test]
-    fn t_sto_022_find_session() {
+    fn t_sto_091_find_session() {
         let conn = setup_db();
         let config = test_config();
 
@@ -919,7 +919,7 @@ mod tests {
     /// T-STO-080: delete_sessions_by_directory returns an empty vec when
     /// no sessions match the given directory (no error, just empty).
     #[test]
-    fn t_sto_028_delete_sessions_by_directory_no_match() {
+    fn t_sto_080_delete_sessions_by_directory_no_match() {
         let conn = setup_db();
 
         let deleted = delete_sessions_by_directory(&conn, "/nonexistent/path")
@@ -931,7 +931,7 @@ mod tests {
     /// instead of cascade-deleting them. A completed job that referenced a
     /// deleted session must remain in the job table with `session_id = NULL`.
     #[test]
-    fn t_sto_029_delete_session_preserves_jobs() {
+    fn t_sto_082_delete_session_preserves_jobs() {
         let conn = setup_db();
         let config = test_config();
 
@@ -967,7 +967,7 @@ mod tests {
     /// all job records for all deleted sessions. Multiple jobs across multiple
     /// sessions in the same directory must all survive with `session_id = NULL`.
     #[test]
-    fn t_sto_030_delete_sessions_by_directory_preserves_jobs() {
+    fn t_sto_084_delete_sessions_by_directory_preserves_jobs() {
         let conn = setup_db();
 
         let config_a = IndexConfig {
@@ -1067,7 +1067,7 @@ mod tests {
     /// with JSON strings, `get_session` returns those values. Calling with
     /// `None` clears them back to NULL.
     #[test]
-    fn t_sto_050_session_tags_and_metadata_lifecycle() {
+    fn t_sto_092_session_tags_and_metadata_lifecycle() {
         let conn = setup_db();
         let config = test_config();
 

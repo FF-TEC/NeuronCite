@@ -819,7 +819,7 @@ mod tests {
     /// The un-delete trigger re-inserts a chunk's content into FTS5 when its
     /// `is_deleted` flag changes from 1 back to 0.
     #[test]
-    fn t_sto_003_migration_creates_all_fts5_triggers() {
+    fn t_sto_061_migration_creates_all_fts5_triggers() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 
@@ -859,7 +859,7 @@ mod tests {
     /// `index_session`. Verifies the column exists via `PRAGMA table_info`
     /// and accepts NULL values (no NOT NULL constraint).
     #[test]
-    fn t_sto_025_schema_includes_label_column() {
+    fn t_sto_077_schema_includes_label_column() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 
@@ -910,7 +910,7 @@ mod tests {
 
     /// T-STO-078: `schema_version()` returns the constant SCHEMA_VERSION value.
     #[test]
-    fn t_sto_026_schema_version_function() {
+    fn t_sto_078_schema_version_function() {
         assert_eq!(
             schema_version(),
             SCHEMA_VERSION,
@@ -921,7 +921,7 @@ mod tests {
     /// T-STO-079: The `index_session` table has exactly the expected set of
     /// columns. Guards against accidentally missing or extra columns.
     #[test]
-    fn t_sto_027_index_session_column_set() {
+    fn t_sto_079_index_session_column_set() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 
@@ -968,7 +968,7 @@ mod tests {
     /// job-related endpoints fail with "no such column: params_json" because
     /// the column was missing from the schema.
     #[test]
-    fn t_sto_028_job_column_set() {
+    fn t_sto_081_job_column_set() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 
@@ -1005,7 +1005,7 @@ mod tests {
     /// T-STO-083: The `indexed_file` table has exactly the expected set of
     /// columns, including `pdf_page_count`.
     #[test]
-    fn t_sto_029_indexed_file_column_set() {
+    fn t_sto_083_indexed_file_column_set() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 
@@ -1044,7 +1044,7 @@ mod tests {
     /// table without params_json, then running ensure_columns() to verify the
     /// column is added.
     #[test]
-    fn t_sto_030_ensure_columns_adds_params_json() {
+    fn t_sto_085_ensure_columns_adds_params_json() {
         let conn = mem_db();
 
         // Create an old-style job table without params_json.
@@ -1128,7 +1128,7 @@ mod tests {
     /// T-STO-086: Column repair adds `pdf_page_count` to an old indexed_file
     /// table that was created without it.
     #[test]
-    fn t_sto_031_ensure_columns_adds_pdf_page_count() {
+    fn t_sto_086_ensure_columns_adds_pdf_page_count() {
         let conn = mem_db();
 
         // Create an old-style indexed_file table without pdf_page_count.
@@ -1304,7 +1304,7 @@ mod tests {
     /// Guards against accidentally missing or extra columns in the citation
     /// verification schema.
     #[test]
-    fn t_sto_035_citation_row_column_set() {
+    fn t_sto_087_citation_row_column_set() {
         let conn = mem_db();
         migrate(&conn).expect("migration failed");
 

@@ -1232,7 +1232,7 @@ mod tests {
     /// not consider the year field, allowing "Fama, 1970" to match a file
     /// named "Fama, 1993" purely based on author-name token overlap.
     #[test]
-    fn t_cit_001_year_mismatch_rejects_candidate() {
+    fn t_cit_079_year_mismatch_rejects_candidate() {
         let files = vec![(
             1_i64,
             "Common Risk Factors in the Returns on Stocks and Bonds (Fama & French, 1993).pdf"
@@ -1257,7 +1257,7 @@ mod tests {
     /// year matches the filename year, the candidate is considered and
     /// returned if token overlap exceeds the threshold.
     #[test]
-    fn t_cit_002_year_match_allows_correct_file() {
+    fn t_cit_080_year_match_allows_correct_file() {
         let files = vec![
             (
                 1_i64,
@@ -1294,7 +1294,7 @@ mod tests {
     /// When the BibTeX year is None, the function falls back to pure token
     /// overlap without year filtering.
     #[test]
-    fn t_cit_003_no_year_falls_back_to_token_overlap() {
+    fn t_cit_081_no_year_falls_back_to_token_overlap() {
         let files = vec![(
             1_i64,
             "Efficient Capital Markets A Review of Theory and Empirical Work (Fama, 1970).pdf"
@@ -1318,7 +1318,7 @@ mod tests {
     /// year. The year filter only rejects candidates that contain a *different*
     /// year, not candidates that contain no year at all.
     #[test]
-    fn t_cit_004_filename_without_year_still_matches() {
+    fn t_cit_082_filename_without_year_still_matches() {
         let files = vec![(
             1_i64,
             "Comparing measures of sample skewness and kurtosis.pdf".to_string(),
@@ -1341,7 +1341,7 @@ mod tests {
     /// one. Given two files from the same author but different years, the
     /// function must select the one whose year matches the BibTeX entry.
     #[test]
-    fn t_cit_005_selects_correct_year_among_multiple() {
+    fn t_cit_083_selects_correct_year_among_multiple() {
         let files = vec![
             (
                 10_i64,
@@ -1368,7 +1368,7 @@ mod tests {
 
     /// T-CIT-084: Empty file lookup returns None without panicking.
     #[test]
-    fn t_cit_006_empty_file_lookup() {
+    fn t_cit_084_empty_file_lookup() {
         let files: Vec<(i64, String)> = vec![];
         let result = find_best_file_match("Author", "Title", Some("2000"), &files);
         assert!(result.is_none(), "empty file lookup must return None");
@@ -1376,7 +1376,7 @@ mod tests {
 
     /// T-CIT-085: Empty author and title returns None without panicking.
     #[test]
-    fn t_cit_007_empty_author_and_title() {
+    fn t_cit_085_empty_author_and_title() {
         let files = vec![(1_i64, "some file.pdf".to_string())];
         let result = find_best_file_match("", "", Some("2000"), &files);
         assert!(result.is_none(), "empty author and title must return None");
@@ -1385,7 +1385,7 @@ mod tests {
     /// T-CIT-086: Year field with extra text (e.g., "1993/04") is parsed
     /// correctly by extracting the first 4 digits.
     #[test]
-    fn t_cit_008_year_with_extra_text() {
+    fn t_cit_086_year_with_extra_text() {
         let files = vec![(
             1_i64,
             "Common Risk Factors (Fama & French, 1993).pdf".to_string(),
@@ -1407,7 +1407,7 @@ mod tests {
     /// T-CIT-087: Below-threshold overlap score returns None. Two strings that
     /// share fewer than 30% of their tokens must not match.
     #[test]
-    fn t_cit_009_below_threshold_returns_none() {
+    fn t_cit_087_below_threshold_returns_none() {
         let files = vec![(
             1_i64,
             "Completely Unrelated Paper About Cooking Recipes.pdf".to_string(),
@@ -1433,7 +1433,7 @@ mod tests {
     /// the generic title tokens "financial" and "markets" appeared in multiple
     /// filenames. The weighted algorithm prioritizes author family name matches.
     #[test]
-    fn t_cit_010_author_weighting_disambiguates_generic_titles() {
+    fn t_cit_088_author_weighting_disambiguates_generic_titles() {
         let files = vec![
             (
                 1_i64,
@@ -1469,7 +1469,7 @@ mod tests {
     /// coefficient when no author tokens are extractable, but when author
     /// tokens are present, they dominate the scoring.
     #[test]
-    fn t_cit_011_author_tokens_dominate_scoring() {
+    fn t_cit_090_author_tokens_dominate_scoring() {
         let files = vec![
             (
                 1_i64,
@@ -1500,7 +1500,7 @@ mod tests {
     /// logic by checking that the StatusCounts struct correctly detects
     /// incomplete states.
     #[test]
-    fn t_cit_091_export_rejects_incomplete_job() {
+    fn t_cit_117_export_rejects_incomplete_job() {
         // Simulate an incomplete job: 2 pending, 1 claimed, 3 done.
         // The export handler checks (pending + claimed) > 0 and rejects.
         let pending: i64 = 2;
@@ -1533,7 +1533,7 @@ mod tests {
     /// page title (as the lookup string for HTML files) produces correct matches,
     /// unlike using the URL-derived filename stem which yields "article" or a hash.
     #[test]
-    fn t_cit_092_html_title_matches_bibtex() {
+    fn t_cit_118_html_title_matches_bibtex() {
         // file_lookup entries: file_id 1 is an HTML file whose lookup string
         // is the page title (lowercased), file_id 2 is a PDF with a filename.
         let files = vec![
@@ -1572,7 +1572,7 @@ mod tests {
     /// "article" from "https://journals.plos.org/.../article"), it has no
     /// token overlap with the BibTeX author/title and returns None.
     #[test]
-    fn t_cit_093_url_stem_fails_to_match() {
+    fn t_cit_119_url_stem_fails_to_match() {
         // Simulate what happens without Bug 4 fix: file_stem of a URL is
         // "article" (from PLOS) or a SHA-256 hash (from cache).
         let files = vec![

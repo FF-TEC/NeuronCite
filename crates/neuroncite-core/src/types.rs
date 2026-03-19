@@ -901,7 +901,7 @@ mod tests {
     /// preserves all fields, confirming that removing the duplicated fields
     /// does not break the serde contract.
     #[test]
-    fn t_core_024b_search_result_json_roundtrip() {
+    fn t_core_059b_search_result_json_roundtrip() {
         let result = SearchResult {
             score: 0.75,
             vector_score: 0.70,

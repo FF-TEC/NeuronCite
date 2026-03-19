@@ -666,7 +666,7 @@ mod tests {
     /// keyword search results again. Without the trigger, un-deleted chunks
     /// are permanently lost from FTS5.
     #[test]
-    fn t_sto_015_fts5_undelete_trigger_restores_search() {
+    fn t_sto_067_fts5_undelete_trigger_restores_search() {
         let (conn, session_id, file_id) = setup_db();
 
         let chunks = vec![ChunkInsert {

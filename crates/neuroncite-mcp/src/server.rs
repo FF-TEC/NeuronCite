@@ -335,7 +335,7 @@ mod tests {
     /// spawn the worker, then run the synchronous server loop. The test
     /// verifies that this pattern does not panic and produces valid responses.
     #[test]
-    fn t_mcp_023_server_loop_with_runtime_guard_pattern() {
+    fn t_mcp_116_server_loop_with_runtime_guard_pattern() {
         let input = format!(
             "{}\n{}\n{}\n",
             init_request_json(),

@@ -434,7 +434,7 @@ mod tests {
     /// clamps scores to [-1000, 1000] and replaces NaN/infinity with -1000.
     /// This test verifies the clamping logic directly on f32 -> f64 conversion.
     #[test]
-    fn t_emb_009_score_clamping_prevents_overflow() {
+    fn t_emb_024_score_clamping_prevents_overflow() {
         // Simulate the clamping logic from rerank_batch's score extraction.
         let clamp_score = |raw: f32| -> f64 {
             let score_f64 = f64::from(raw);

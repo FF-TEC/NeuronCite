@@ -1153,7 +1153,7 @@ mod tests {
 
     /// T-CIT-107: insert_citation_rows stores all fields correctly.
     #[test]
-    fn t_cit_024_insert_rows() {
+    fn t_cit_107_insert_rows() {
         let conn = setup_db();
         let params = default_params();
         create_test_job(&conn, "job-024", &params);
@@ -1188,7 +1188,7 @@ mod tests {
 
     /// T-CIT-108: claim_next_batch returns the lowest pending batch.
     #[test]
-    fn t_cit_025_claim_lowest_batch() {
+    fn t_cit_108_claim_lowest_batch() {
         let conn = setup_db();
         let params = default_params();
         create_test_job(&conn, "job-025", &params);

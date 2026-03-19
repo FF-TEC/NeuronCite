@@ -390,7 +390,7 @@ mod tests {
 
     /// T-STO-093: Job state transitions.
     #[test]
-    fn t_sto_016_job_state_transitions() {
+    fn t_sto_093_job_state_transitions() {
         let conn = setup_db();
 
         let job_id = "test-job-001";
@@ -441,7 +441,7 @@ mod tests {
 
     /// T-STO-094: Job 24-hour retention cleanup.
     #[test]
-    fn t_sto_017_job_24h_retention_cleanup() {
+    fn t_sto_094_job_24h_retention_cleanup() {
         let conn = setup_db();
 
         let now = SystemTime::now()
@@ -484,7 +484,7 @@ mod tests {
     /// Verifies that annotation-style jobs with JSON parameters can be created
     /// and the parameters are correctly read back via get_job.
     #[test]
-    fn t_sto_018_create_job_with_params() {
+    fn t_sto_095_create_job_with_params() {
         let conn = setup_db();
 
         let params = r#"{"source_directory":"/pdfs","output_directory":"/out"}"#;
@@ -500,7 +500,7 @@ mod tests {
     /// Verifies that the legacy create_job function produces a job with
     /// params_json = None.
     #[test]
-    fn t_sto_019_create_job_without_params() {
+    fn t_sto_074_create_job_without_params() {
         let conn = setup_db();
 
         create_job(&conn, "index-1", "index", None).expect("create_job failed");
@@ -516,7 +516,7 @@ mod tests {
     /// test reproduces the original "no such column: params_json" bug by
     /// verifying that list_jobs correctly reads the params_json column.
     #[test]
-    fn t_sto_020_list_jobs_includes_params_json() {
+    fn t_sto_076_list_jobs_includes_params_json() {
         let conn = setup_db();
 
         let params = r#"{"input_data":"title,author,quote\nA,B,C"}"#;

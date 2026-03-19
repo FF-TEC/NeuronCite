@@ -1117,7 +1117,7 @@ mod tests {
     /// NeuronCite runtime cache for this test to pass. When Tesseract is
     /// missing, the test fails with a descriptive assertion message.
     #[test]
-    fn t_pdf_008_ocr_fallback_triggers_for_image_only_pages() {
+    fn t_pdf_061_ocr_fallback_triggers_for_image_only_pages() {
         // Generate a valid 1x1 white PNG image using the image crate.
         // Hand-crafted PNG byte arrays are fragile (CRC, zlib checksums),
         // so the image crate produces a structurally correct file.

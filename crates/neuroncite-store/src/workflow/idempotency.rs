@@ -280,7 +280,7 @@ mod tests {
     /// querying by key returns the associated job_id and session_id. A
     /// non-existent key returns None.
     #[test]
-    fn t_sto_018_idempotency_key_lookup() {
+    fn t_sto_096_idempotency_key_lookup() {
         let (conn, session_id, job_id) = setup_db_with_job();
 
         // Store an idempotency key
@@ -304,7 +304,7 @@ mod tests {
     /// the job; a second call with the same key returns the existing entry
     /// without creating a duplicate job row.
     #[test]
-    fn t_sto_019_create_job_with_key_atomic_idempotency() {
+    fn t_sto_073_create_job_with_key_atomic_idempotency() {
         let mut conn = setup_empty_db();
         let session_id = make_session(&conn);
 
@@ -371,7 +371,7 @@ mod tests {
     /// T-STO-075: Atomic job creation with idempotency key — two different keys
     /// on the same session create two independent jobs.
     #[test]
-    fn t_sto_020_create_job_with_key_different_keys_create_separate_jobs() {
+    fn t_sto_075_create_job_with_key_different_keys_create_separate_jobs() {
         let mut conn = setup_empty_db();
         let session_id = make_session(&conn);
 

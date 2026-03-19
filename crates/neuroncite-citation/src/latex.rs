@@ -367,7 +367,7 @@ text \cite{end_key}";
     /// T-CIT-089: Anchor extraction is limited to MAX_ANCHOR_WORDS (25) words.
     /// When more than 25 words precede a citation, only the last 25 are captured.
     #[test]
-    fn t_cit_011_anchor_max_words_limit() {
+    fn t_cit_089_anchor_max_words_limit() {
         // Build a sequence of 30 words before the citation so the limit is exercised.
         let tex = "w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 \
                    w11 w12 w13 w14 w15 w16 w17 w18 w19 w20 \
@@ -394,7 +394,7 @@ text \cite{end_key}";
     /// T-CIT-091: tex_context captures surrounding lines up to ~200 chars.
     /// A citation on a short line expands to include adjacent lines for context.
     #[test]
-    fn t_cit_012_tex_context_captures_surrounding_lines() {
+    fn t_cit_091_tex_context_captures_surrounding_lines() {
         let tex = "This is the first line of the document.\n\
                    This is the second line with more text.\n\
                    Here is the citation \\cite{key1} in context.\n\
@@ -420,7 +420,7 @@ text \cite{end_key}";
 
     /// T-CIT-092: tex_context handles a single-line document.
     #[test]
-    fn t_cit_013_tex_context_single_line() {
+    fn t_cit_092_tex_context_single_line() {
         let tex = "Short line \\cite{key1} end.";
         let cits = parse_citations(tex);
 
@@ -433,7 +433,7 @@ text \cite{end_key}";
 
     /// T-CIT-093: extract_trailing_words returns empty string for empty input.
     #[test]
-    fn t_cit_014_extract_trailing_words_empty() {
+    fn t_cit_093_extract_trailing_words_empty() {
         assert_eq!(extract_trailing_words("", 15), "");
         assert_eq!(extract_trailing_words("   ", 15), "");
     }
@@ -441,7 +441,7 @@ text \cite{end_key}";
     /// T-CIT-094: extract_leading_words strips trailing punctuation from the
     /// last word only.
     #[test]
-    fn t_cit_015_extract_leading_words_strips_punctuation() {
+    fn t_cit_094_extract_leading_words_strips_punctuation() {
         assert_eq!(
             extract_leading_words(" are significant.", 15),
             "are significant"
@@ -451,7 +451,7 @@ text \cite{end_key}";
 
     /// T-CIT-095: extract_tex_context builds context from surrounding lines.
     #[test]
-    fn t_cit_016_extract_tex_context_expansion() {
+    fn t_cit_095_extract_tex_context_expansion() {
         let lines: Vec<&str> = vec!["line0", "line1", "line2", "line3", "line4"];
         // Center on line 2, target 20 chars -- should expand to include adjacent lines.
         let ctx = extract_tex_context(&lines, 2, 20);

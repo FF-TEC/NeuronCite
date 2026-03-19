@@ -185,7 +185,7 @@ fn random_text(rng: &mut Lcg, word_count: usize) -> String {
 /// This property is tested with 100 random text strings of varying lengths
 /// (1 to 200 words).
 #[test]
-fn t_prop_005_simhash_identical_texts_hamming_zero() {
+fn t_prop_007_simhash_identical_texts_hamming_zero() {
     let mut rng = Lcg::new(0xA5FA_CE50_0000_0005);
 
     for trial in 0..100 {
