@@ -18,16 +18,26 @@
 //
 // Responsibilities:
 //
-// 1. Suppresses the LIBCMT linker warning on MSVC. With the `load-dynamic`
+// 1. Configures git to use the tracked .githooks/ directory for hook scripts.
+//    This runs once per workspace checkout and is a no-op on subsequent builds.
+//    The .githooks/ directory is committed to the repository, so every
+//    contributor receives identical hooks without manual setup steps.
+//
+// 2. Suppresses the LIBCMT linker warning on MSVC. With the `load-dynamic`
 //    feature on `ort`, ONNX Runtime is loaded as a shared library at runtime
 //    via `libloading`. This avoids the CRT conflict between esaxx-rs (/MT)
 //    and ort-sys (/MD). The /NODEFAULTLIB:LIBCMT flag is emitted defensively.
 //
-// 2. Embeds the application icon (assets/icon.ico) into the Windows
+// 3. Embeds the application icon (assets/icon.ico) into the Windows
 //    executable via winres. This makes the .exe display the NeuronCite
 //    gradient "C" icon in Windows Explorer, the taskbar, and Alt+Tab.
 
+use std::process::Command;
+
 fn main() {
+    configure_git_hooks();
+    // --- MSVC linker flags ---
+
     // On Windows with the MSVC toolchain, suppress the static C runtime
     // library (LIBCMT) to prevent LNK4098 linker warnings. This conflict
     // arises when one crate links against the static CRT (/MT) while
@@ -53,6 +63,44 @@ fn main() {
             // functions without an embedded icon -- Windows falls back to
             // the default executable icon.
             println!("cargo:warning=winres icon embedding failed: {e}");
+        }
+    }
+}
+
+/// Points `git config core.hooksPath` at the tracked `.githooks/` directory.
+///
+/// Git stores hooks in `.git/hooks/` by default, which is not committed to the
+/// repository. By redirecting to `.githooks/`, every contributor automatically
+/// receives the same pre-commit hook after their first `cargo build`.
+///
+/// The function is intentionally silent on failure: CI runners and archive
+/// extracts (no `.git/` directory) must not break the build over hook setup.
+fn configure_git_hooks() {
+    // Query the current core.hooksPath value. If it already points to
+    // .githooks, there is nothing to do.
+    let current = Command::new("git")
+        .args(["config", "--local", "core.hooksPath"])
+        .output();
+
+    if let Ok(output) = current {
+        let value = String::from_utf8_lossy(&output.stdout);
+        if value.trim() == ".githooks" {
+            return;
+        }
+    }
+
+    // Set core.hooksPath to .githooks so git finds the tracked hook scripts.
+    let result = Command::new("git")
+        .args(["config", "core.hooksPath", ".githooks"])
+        .status();
+
+    match result {
+        Ok(status) if status.success() => {
+            println!("cargo:warning=git core.hooksPath configured to .githooks/");
+        }
+        _ => {
+            // Silently ignore failures. This covers environments without git
+            // (CI with pre-checked-out sources, vendored builds, etc.).
         }
     }
 }

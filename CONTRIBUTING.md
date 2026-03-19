@@ -117,11 +117,12 @@ cargo test --workspace
 ```
 
 The repository includes pre-commit hooks that run automatically on each commit.
-To install them manually:
+The first `cargo build` configures git to use the tracked `.githooks/` directory,
+so no manual hook installation is required. The only prerequisite is the
+`pre-commit` Python package:
 
 ```bash
 pip install pre-commit
-pre-commit install
 ```
 
 The hooks check: formatting (`cargo fmt`), linting (`cargo clippy`), license

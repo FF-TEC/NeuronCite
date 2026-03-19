@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Pre-commit hook for the NeuronCite workspace.
+# This file lives in .githooks/ (tracked by git) so every contributor
+# receives the same hook. The binary crate's build.rs automatically sets
+# git core.hooksPath to .githooks/ on the first cargo build, so no
+# manual setup is required.
+#
+# The hook delegates to the pre-commit Python framework which reads
+# .pre-commit-config.yaml for the actual check definitions.
+
+set -euo pipefail
+
+# Locate a working Python interpreter.
+# 1. Try the NEURONCITE_PYTHON environment variable (explicit override).
+# 2. Fall back to whichever python3 / python is on PATH.
+if [ -n "${NEURONCITE_PYTHON:-}" ] && [ -x "$NEURONCITE_PYTHON" ]; then
+    PYTHON="$NEURONCITE_PYTHON"
+elif command -v python3 > /dev/null 2>&1; then
+    PYTHON="python3"
+elif command -v python > /dev/null 2>&1; then
+    PYTHON="python"
+else
+    echo "ERROR: No Python interpreter found." >&2
+    echo "Install Python 3.8+ or set NEURONCITE_PYTHON to the interpreter path." >&2
+    exit 1
+fi
+
+# Determine the directory this hook script resides in.
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+ARGS=(hook-impl --config=.pre-commit-config.yaml --hook-type=pre-commit)
+ARGS+=(--hook-dir "$HERE" -- "$@")
+
+# Prefer the pre-commit module through the resolved interpreter;
+# fall back to a globally installed pre-commit binary.
+if "$PYTHON" -c "import pre_commit" > /dev/null 2>&1; then
+    exec "$PYTHON" -m pre_commit "${ARGS[@]}"
+elif command -v pre-commit > /dev/null 2>&1; then
+    exec pre-commit "${ARGS[@]}"
+else
+    echo "ERROR: pre-commit is not installed." >&2
+    echo "Install it with:  pip install pre-commit" >&2
+    exit 1
+fi

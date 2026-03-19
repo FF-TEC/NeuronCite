@@ -1,17 +1,13 @@
 # Pre-commit hook configuration for the NeuronCite workspace.
-# Mirrors the .git/hooks/pre-commit bash script so that contributors who
-# use the pre-commit Python framework get the same checks as the bash hook.
+# The tracked hook script at .githooks/pre-commit delegates to the
+# pre-commit Python framework, which reads this file for check definitions.
 #
-# The bash hook (.git/hooks/pre-commit) is the authoritative source.
-# This file serves as a declarative reference for pre-commit framework users.
+# git core.hooksPath is set to .githooks/ automatically by the binary
+# crate's build.rs on the first cargo build -- no manual setup is required.
 #
-# The bash hook groups these checks into 6 phases and runs independent
-# checks within a phase in parallel (background subshells with output
-# capture). The pre-commit Python framework runs hooks sequentially in
-# the order listed below, so no parallelism is available through this
-# YAML configuration. For maximum speed, use the bash hook directly.
+# The checks are grouped into 6 phases. The pre-commit Python framework
+# runs hooks sequentially in the order listed below.
 #
-# Install: pre-commit install
 # Run all hooks manually: pre-commit run --all-files
 
 repos:
