@@ -1637,7 +1637,7 @@ mod tests {
         assert_eq!(columns[25], "", "passage_1_score empty");
     }
 
-    /// T-CIT-078: Excel with all 6 verdict types and passage_location produces
+    /// T-CIT-078: Excel with all 7 verdict types and passage_location produces
     /// valid output without errors.
     #[test]
     fn t_cit_078_excel_all_verdicts_with_locations() {
@@ -1648,6 +1648,7 @@ mod tests {
             (Verdict::NotFound, PassageLocation::BodyText),
             (Verdict::WrongSource, PassageLocation::LiteratureReview),
             (Verdict::Unverifiable, PassageLocation::Appendix),
+            (Verdict::PeripheralMatch, PassageLocation::TableOfContents),
         ];
 
         let rows: Vec<CitationRow> = verdicts_and_locations

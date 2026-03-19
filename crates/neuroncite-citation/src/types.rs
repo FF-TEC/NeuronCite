@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 /// The sub-agent's assessment of whether the cited source supports the claim
-/// made in the LaTeX document. Six verdict types ordered from full support
+/// made in the LaTeX document. Seven verdict types ordered from full support
 /// to unverifiable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

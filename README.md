@@ -44,8 +44,8 @@ verdict, confidence score, and correction suggestions.
 
 **Enterprise-Grade Architecture** -- 16 Rust crates with clear separation of
 concerns. 43 MCP tools, 34 REST API endpoints, a browser-based GUI with 7
-tabs, a Python client library, and 10 CLI commands -- all compiled into a single
-executable that runs without Docker, Kubernetes, or external infrastructure.
+tabs, a Python client library, and 11 CLI commands. CPU-only builds compile into
+a single executable that runs without Docker, Kubernetes, or external infrastructure.
 Citation verification additionally requires a running Ollama instance.
 
 ---
@@ -144,12 +144,13 @@ types (rephrase, add context, replace citation).
 ### PDF Annotation
 
 Highlights text passages in PDFs with color-coded annotations based on
-verification verdicts. Uses a 4-stage text matching pipeline:
+verification verdicts. Uses a 5-stage text matching pipeline:
 
 1. Exact byte-level match
 2. Normalized match with whitespace collapsing
 3. Fuzzy character-level match (string distance)
-4. OCR fallback for scanned pages
+4. Fallback extraction via multi-backend PDF text pipeline
+5. OCR fallback for scanned pages
 
 Accepts annotation input as CSV or JSON. Supports comment annotations with
 popup text alongside highlights.
@@ -165,7 +166,7 @@ and served at `http://localhost:3030`.
 | **Indexing** | Directory selection, embedding model and chunking strategy configuration, real-time progress tracking, session management |
 | **Search** | Multi-session hybrid search with vector/BM25/reranking toggles, sub-chunk refinement, grouped and flat result views, export as Markdown/BibTeX/CSL-JSON/RIS |
 | **Citations** | LaTeX file selection with auto-detection of .bib files, Ollama model selection with connection test, verification mode presets (quick, balanced, thorough), live results with expandable verdicts |
-| **Annotations** | CSV/JSON annotation input, source PDF directory selection, 4-stage text location pipeline, color configuration, per-quote progress tracking |
+| **Annotations** | CSV/JSON annotation input, source PDF directory selection, 5-stage text location pipeline, color configuration, per-quote progress tracking |
 | **Models** | Embedding model catalog with download/activate controls, cross-encoder reranker management, Ollama LLM catalog, GPU/CUDA system info, model diagnostics |
 | **Settings** | FTS5 index optimization, HNSW vector index rebuild, database reset, dependency detection (pdfium, Tesseract, Poppler), MCP server registration, real-time log streaming via SSE |
 
@@ -424,7 +425,7 @@ PDFs / HTML pages
 | Domain | `neuroncite-pipeline` | Background job executor, GPU worker with priority channels, two-phase indexing |
 | Domain | `neuroncite-search` | Hybrid search, BM25, Reciprocal Rank Fusion, deduplication, reranking |
 | Domain | `neuroncite-citation` | LaTeX/BibTeX parsing, batch claim extraction, LLM-driven verification |
-| Domain | `neuroncite-annotate` | PDF annotation with 4-stage text matching pipeline |
+| Domain | `neuroncite-annotate` | PDF annotation with 5-stage text matching pipeline |
 | Core | `neuroncite-store` | SQLite storage (r2d2 pool), HNSW index, FTS5 full-text search, workflow tracking |
 | Core | `neuroncite-embed` | Dense embeddings via ONNX Runtime, model download and management, cross-encoder reranking |
 | Core | `neuroncite-pdf` | PDF discovery and text extraction (pdf-extract, pdfium, Tesseract OCR) |

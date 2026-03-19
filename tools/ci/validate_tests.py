@@ -13,7 +13,7 @@ dependencies), validate_schemas.py (database schema tables, columns, indexes,
 triggers), and validate_consistency.py (MCP tools, API endpoints, CLI
 subcommands, crate counts).
 
-Validation checks (11 categories):
+Validation checks (12 categories):
 
   1.  test_id_duplicates       (error)   No duplicate test IDs in LaTeX or code
   2.  test_id_sequential       (warning) IDs within each prefix are sequential
@@ -26,6 +26,8 @@ Validation checks (11 categories):
   9.  unit_crate_counts        (error)   Per-crate summary counts match catalog
   10. summary_caption_match    (error)   Summary body total matches caption
   11. fn_name_doc_id           (error)   Function name ID matches doc-comment ID
+  12. verdict_count_in_tests   (error)   Verdict count claims in test descriptions
+                                         match Verdict enum variant count
 
 Exit codes:
   0  All checks passed (no errors; warnings allowed unless --strict).
@@ -1322,6 +1324,87 @@ def check_summary_caption_match(summary: dict) -> list[Diagnostic]:
     return diagnostics
 
 
+def _parse_verdict_count_from_code(root: Path) -> int:
+    """Count the number of Verdict enum variants in neuroncite-citation.
+
+    Reads the Verdict enum definition in types.rs and counts PascalCase
+    identifiers appearing on their own line inside the enum body.
+
+    Args:
+        root: The Cargo workspace root directory.
+
+    Returns:
+        The number of Verdict variants, or 0 if the enum is not found.
+    """
+    types_path = root / "crates" / "neuroncite-citation" / "src" / "types.rs"
+    if not types_path.is_file():
+        return 0
+    content = types_path.read_text(encoding="utf-8")
+
+    enum_match = re.search(r"pub\s+enum\s+Verdict\s*\{", content)
+    if not enum_match:
+        return 0
+
+    start = enum_match.end()
+    depth = 1
+    pos = start
+    while pos < len(content) and depth > 0:
+        if content[pos] == "{":
+            depth += 1
+        elif content[pos] == "}":
+            depth -= 1
+        pos += 1
+
+    enum_body = content[start:pos - 1]
+    count = 0
+    for line in enum_body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("//") or stripped.startswith("#"):
+            continue
+        if re.match(r"[A-Z][a-zA-Z]*", stripped):
+            count += 1
+    return count
+
+
+def check_verdict_count_in_tests(
+    tex_content: str, root: Path,
+) -> list[Diagnostic]:
+    """Check 12: Verify that verdict count claims in test descriptions match code.
+
+    Scans the LaTeX test catalogs for descriptions containing "all N verdict
+    types" and compares N against the actual Verdict enum variant count.
+
+    Args:
+        tex_content: The full LaTeX document content (with \\input resolved).
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of Diagnostic instances for any mismatches.
+    """
+    diagnostics: list[Diagnostic] = []
+    actual_count = _parse_verdict_count_from_code(root)
+
+    if actual_count == 0:
+        return diagnostics
+
+    # Match "all N verdict types" in test description text
+    pattern = r"all\s+(\d+)\s+verdict\s+types?"
+    for match in re.finditer(pattern, tex_content, re.IGNORECASE):
+        claimed = int(match.group(1))
+        if claimed != actual_count:
+            diagnostics.append(Diagnostic(
+                level="error",
+                category="verdict_count_in_tests",
+                section="test_descriptions",
+                detail=(
+                    f'test description claims "all {claimed} verdict types" '
+                    f"but the Verdict enum has {actual_count} variants"
+                ),
+            ))
+
+    return diagnostics
+
+
 # ---------------------------------------------------------------------------
 # Output formatting
 # ---------------------------------------------------------------------------
@@ -1416,7 +1499,7 @@ def format_json(diagnostics: list[Diagnostic]) -> str:
 # ---------------------------------------------------------------------------
 
 def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
-    """Run all 11 validation checks and return the combined diagnostics.
+    """Run all 12 validation checks and return the combined diagnostics.
 
     Reads the LaTeX document and scans the Rust source tree for test IDs.
     Parses all four LaTeX catalog tables and the summary table, then
@@ -1562,6 +1645,9 @@ def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
 
     # Check 11: Function name matches doc comment ID
     diagnostics.extend(check_fn_name_matches_doc_id(root_path))
+
+    # Check 12: Verdict count claims in test descriptions
+    diagnostics.extend(check_verdict_count_in_tests(tex_content, root_path))
 
     return diagnostics
 

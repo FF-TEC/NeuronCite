@@ -19,8 +19,9 @@
 //!
 //! Operates standalone without requiring an indexed session. Takes CSV or JSON
 //! input with title, author, and quote fields, matches PDFs by filename using
-//! Jaro-Winkler similarity, locates text via a 4-stage pipeline (exact,
-//! normalized, fuzzy, OCR), and creates pdfium highlight annotations.
+//! Jaro-Winkler similarity, locates text via a 5-stage pipeline (exact,
+//! normalized, fuzzy, fallback extraction, OCR), and creates pdfium highlight
+//! annotations.
 //!
 //! The crate exposes three public functions:
 //!   - annotate_pdfs(): runs the full pipeline (resolve -> locate -> annotate -> verify -> save)

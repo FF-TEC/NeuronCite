@@ -1,8 +1,9 @@
 # PDF annotation crate: highlights quoted text passages and adds comment
 # annotations to PDF documents. Operates standalone without requiring an
 # indexed session -- takes CSV/JSON input with title, author, and quote
-# fields, matches PDFs by filename, locates text via a 4-stage pipeline
-# (exact, normalized, fuzzy, OCR), and creates pdfium annotations.
+# fields, matches PDFs by filename, locates text via a 5-stage pipeline
+# (exact, normalized, fuzzy, fallback extraction, OCR), and creates
+# pdfium annotations.
 
 [package]
 name = "neuroncite-annotate"

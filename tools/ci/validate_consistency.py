@@ -11,7 +11,7 @@ suite, alongside validate_architecture.py (module structure, feature flags,
 dependencies) and validate_schemas.py (database schema tables, columns,
 indexes, triggers).
 
-Validation checks (8 categories):
+Validation checks (11 categories):
 
   1. crate_count          (error)   Prose "N library crates" matches crate table
   2. mcp_tool_count       (error)   Prose tool-count claims match code
@@ -21,6 +21,9 @@ Validation checks (8 categories):
   6. cli_subcommand_table (error)   Subcommand table matches main.rs
   7. label_integrity      (warning) Labels/refs are bidirectionally complete
   8. numeric_claims       (warning) Countable prose claims match item lists
+  9. verdict_count        (error)   Prose verdict-count claims match Verdict enum
+  10. pipeline_stage_count (error)   Prose stage-count claims match locate.rs
+  11. default_features     (error)   Build doc matches Cargo.toml default features
 
 Exit codes:
   0  All checks passed (no errors; warnings allowed unless --strict).
@@ -1093,6 +1096,220 @@ def check_numeric_claims(tex_content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+def parse_verdict_variants_from_code(root: Path) -> list[str]:
+    """Extract Verdict enum variant names from types.rs in neuroncite-citation.
+
+    Reads the Verdict enum definition and collects PascalCase variant names.
+    Variants are identified as identifiers appearing on their own line
+    inside the enum body, ignoring doc comments and attributes.
+
+    Args:
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of variant name strings (e.g., ["Supported", "Partial", ...]).
+    """
+    types_path = root / "crates" / "neuroncite-citation" / "src" / "types.rs"
+    content = types_path.read_text(encoding="utf-8")
+
+    enum_match = re.search(r"pub\s+enum\s+Verdict\s*\{", content)
+    if not enum_match:
+        return []
+
+    start = enum_match.end()
+    depth = 1
+    pos = start
+    while pos < len(content) and depth > 0:
+        if content[pos] == "{":
+            depth += 1
+        elif content[pos] == "}":
+            depth -= 1
+        pos += 1
+
+    enum_body = content[start:pos - 1]
+    variants: list[str] = []
+    for line in enum_body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("//") or stripped.startswith("#"):
+            continue
+        variant_match = re.match(r"([A-Z][a-zA-Z]*)", stripped)
+        if variant_match:
+            variants.append(variant_match.group(1))
+
+    return variants
+
+
+def parse_pipeline_stage_count_from_code(root: Path) -> int:
+    """Count pipeline stages documented in locate.rs of neuroncite-annotate.
+
+    Scans the module-level doc comment for "Stage N" or "Stage N.N" markers
+    to determine how many stages the pipeline has.
+
+    Args:
+        root: The Cargo workspace root directory.
+
+    Returns:
+        The number of distinct stages found (counting N.N as a separate stage).
+    """
+    locate_path = root / "crates" / "neuroncite-annotate" / "src" / "locate.rs"
+    content = locate_path.read_text(encoding="utf-8")
+
+    # Match "Stage 1", "Stage 2", "Stage 3", "Stage 3.5", "Stage 4" etc.
+    stages = re.findall(r"Stage\s+(\d+(?:\.\d+)?)", content)
+    return len(set(stages))
+
+
+def parse_default_features_from_cargo(root: Path) -> list[str]:
+    """Extract the default feature list from the binary crate's Cargo.toml.
+
+    Reads the [features] section of crates/neuroncite/Cargo.toml and
+    parses the default = [...] array.
+
+    Args:
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A sorted list of default feature names.
+    """
+    cargo_path = root / "crates" / "neuroncite" / "Cargo.toml"
+    content = cargo_path.read_text(encoding="utf-8")
+
+    match = re.search(r'default\s*=\s*\[([^\]]+)\]', content)
+    if not match:
+        return []
+
+    raw = match.group(1)
+    features = [f.strip().strip('"').strip("'") for f in raw.split(",")]
+    return sorted(f for f in features if f)
+
+
+def check_verdict_count(tex_content: str, root: Path) -> list[Diagnostic]:
+    """Check 9: Verify that prose verdict-count claims match the Verdict enum.
+
+    Scans the LaTeX document for patterns like "six verdict types" or
+    "seven verdict types" and compares the claimed count against the actual
+    number of variants in the Verdict enum in types.rs.
+
+    Args:
+        tex_content: The full LaTeX document content.
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of Diagnostic instances for any mismatches.
+    """
+    diagnostics: list[Diagnostic] = []
+    variants = parse_verdict_variants_from_code(root)
+    actual_count = len(variants)
+
+    if actual_count == 0:
+        return diagnostics
+
+    pattern = r"(\w+(?:-\w+)?)\s+verdict\s+types?"
+    for match in re.finditer(pattern, tex_content, re.IGNORECASE):
+        word = match.group(1)
+        claimed = parse_number_word(word)
+        if claimed is not None and claimed != actual_count:
+            diagnostics.append(Diagnostic(
+                level="error",
+                category="verdict_count",
+                section="citation_verdicts",
+                detail=(
+                    f'prose claims "{match.group(0)}" ({claimed}) '
+                    f"but the Verdict enum has {actual_count} variants: "
+                    f"{', '.join(variants)}"
+                ),
+            ))
+
+    return diagnostics
+
+
+def check_pipeline_stage_count(
+    tex_content: str, root: Path,
+) -> list[Diagnostic]:
+    """Check 10: Verify that prose pipeline-stage claims match locate.rs.
+
+    Scans the LaTeX document for "N-stage" references in annotation pipeline
+    context and compares against the actual stage count in locate.rs.
+
+    Args:
+        tex_content: The full LaTeX document content.
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of Diagnostic instances for any mismatches.
+    """
+    diagnostics: list[Diagnostic] = []
+    actual_stages = parse_pipeline_stage_count_from_code(root)
+
+    if actual_stages == 0:
+        return diagnostics
+
+    # Match "N-stage" or "N-Stage" patterns (e.g., "4-stage", "5-Stage")
+    pattern = r"(\d+)-[Ss]tage"
+    for match in re.finditer(pattern, tex_content):
+        claimed = int(match.group(1))
+        if claimed != actual_stages:
+            diagnostics.append(Diagnostic(
+                level="error",
+                category="pipeline_stage_count",
+                section="annotation_pipeline",
+                detail=(
+                    f'prose claims "{match.group(0)}" but locate.rs '
+                    f"documents {actual_stages} stages"
+                ),
+            ))
+
+    return diagnostics
+
+
+def check_default_features(tex_content: str, root: Path) -> list[Diagnostic]:
+    """Check 11: Verify that build documentation matches Cargo.toml defaults.
+
+    Searches the LaTeX document for the build command description of
+    ``cargo build --release`` and checks whether the feature list matches
+    the actual default features in Cargo.toml.
+
+    Args:
+        tex_content: The full LaTeX document content.
+        root: The Cargo workspace root directory.
+
+    Returns:
+        A list of Diagnostic instances for any mismatches.
+    """
+    diagnostics: list[Diagnostic] = []
+    actual_features = parse_default_features_from_cargo(root)
+
+    if not actual_features:
+        return diagnostics
+
+    # Check for "default features (xxx)" pattern near "cargo build --release"
+    match = re.search(
+        r"default\s+features\s*\(([^)]+)\)",
+        tex_content,
+    )
+    if match:
+        claimed_text = match.group(1).strip()
+        # Parse the claimed feature list
+        claimed_features = sorted(
+            f.strip().replace("-{}-", "--")
+            for f in claimed_text.split(",")
+            if f.strip()
+        )
+
+        if claimed_features != actual_features:
+            diagnostics.append(Diagnostic(
+                level="error",
+                category="default_features",
+                section="build_commands",
+                detail=(
+                    f'build docs claim default features "{claimed_text}" '
+                    f"but Cargo.toml defines: {', '.join(actual_features)}"
+                ),
+            ))
+
+    return diagnostics
+
+
 # ---------------------------------------------------------------------------
 # Output formatting
 # ---------------------------------------------------------------------------
@@ -1186,7 +1403,7 @@ def format_json(diagnostics: list[Diagnostic]) -> str:
 # ---------------------------------------------------------------------------
 
 def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
-    """Run all 8 validation checks and return the combined diagnostics.
+    """Run all 11 validation checks and return the combined diagnostics.
 
     Reads the LaTeX document and the relevant Rust source files, parses
     both sides, and executes each check function.
@@ -1216,6 +1433,9 @@ def run_validation(tex_path: Path, root_path: Path) -> list[Diagnostic]:
     diagnostics.extend(check_cli_subcommand_table(tex_content, code_subcommands))
     diagnostics.extend(check_label_integrity(tex_content))
     diagnostics.extend(check_numeric_claims(tex_content))
+    diagnostics.extend(check_verdict_count(tex_content, root_path))
+    diagnostics.extend(check_pipeline_stage_count(tex_content, root_path))
+    diagnostics.extend(check_default_features(tex_content, root_path))
 
     return diagnostics
 

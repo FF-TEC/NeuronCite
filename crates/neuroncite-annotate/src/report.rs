@@ -84,7 +84,8 @@ pub struct QuoteReport {
     pub quote_excerpt: String,
     /// Status: "matched", "not_found", or "error".
     pub status: String,
-    /// Which pipeline stage found the match (exact, normalized, fuzzy, ocr).
+    /// Which pipeline stage found the match (exact, normalized, fuzzy,
+    /// fallback_extract, ocr).
     pub match_method: Option<String>,
     /// 1-indexed page number where the quote was found.
     pub page: Option<usize>,

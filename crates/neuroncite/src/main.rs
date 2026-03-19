@@ -17,7 +17,8 @@
 //! NeuronCite binary entry point.
 //!
 //! Parses CLI arguments via clap to determine the execution mode (web, serve,
-//! index, search, doctor, sessions, export, version). Initializes the tracing
+//! index, search, doctor, sessions, export, annotate, version, models, mcp).
+//! Initializes the tracing
 //! subscriber for structured logging, then dispatches to the appropriate
 //! execution path. When invoked without a subcommand, defaults to web UI mode:
 //! the axum server starts with the embedded SolidJS frontend and the default

@@ -36,13 +36,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # The denyWarnings input causes the action to treat advisory
-      # warnings as hard failures, matching the project policy of
-      # zero-tolerance for known vulnerabilities. The ignore list
-      # contains "unmaintained" advisories from the GTK3 binding
-      # crates that wry (WebView) pulls in transitively. These
-      # crates have no maintained replacement and cannot be updated
-      # until wry migrates to GTK4 bindings upstream.
+      # Audit for known vulnerabilities. The denyWarnings input
+      # causes advisory warnings to be treated as hard failures.
+      # GTK3 binding advisories are suppressed because no maintained
+      # replacement exists until wry migrates to GTK4 upstream.
       - uses: actions-rust-lang/audit@v1
         with:
           denyWarnings: true

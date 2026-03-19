@@ -131,6 +131,9 @@ def parse_router_routes(router_content: str) -> list[str]:
     Parses ``.route("/<path>", ...)`` patterns and prepends the ``/api/v1``
     prefix applied by the ``Router::nest`` call. The ``openapi.json`` endpoint
     is excluded because it serves documentation, not application data.
+    The published "34 REST API endpoints" count in the README includes
+    openapi.json; this function returns 33 routes (34 minus the excluded
+    documentation endpoint).
 
     Args:
         router_content: Full text of the router.rs file.

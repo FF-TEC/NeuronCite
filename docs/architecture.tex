@@ -143,10 +143,10 @@ citation verification, and PDF annotation:
           interface and a REST API
     \item LaTeX citation verification: parses \texttt{\textbackslash cite} commands
           from \texttt{.tex} files, matches cited works to indexed PDFs, and
-          manages a batch-based claim/submit workflow with six verdict types
+          manages a batch-based claim/submit workflow with seven verdict types
     \item PDF annotation: highlights quoted text passages and adds comment
-          annotations via a 4-stage text matching pipeline (exact, normalized,
-          fuzzy, OCR fallback)
+          annotations via a 5-stage text matching pipeline (exact, normalized,
+          fuzzy, fallback extraction, OCR)
     \item LLM integration via Ollama for agent-driven citation verification
     \item A Model Context Protocol (MCP) server that exposes all functionality
           as JSON-RPC 2.0 tools for integration with AI coding assistants
@@ -361,9 +361,9 @@ architectural concern.
                                 Takes CSV or JSON input with title, author,
                                 and quote fields. Resolves PDFs via
                                 Jaro-Winkler filename matching, locates text
-                                through a 4-stage pipeline (exact, normalized,
-                                fuzzy, OCR), and creates pdfium highlight
-                                and text annotations. \\
+                                through a 5-stage pipeline (exact, normalized,
+                                fuzzy, fallback extraction, OCR), and creates
+                                pdfium highlight and text annotations. \\
     neuroncite-citation & Library & LaTeX citation verification pipeline.
                                 Parses \texttt{\textbackslash cite} commands
                                 from \texttt{.tex} files and resolves cite-keys
@@ -372,7 +372,7 @@ architectural concern.
                                 groups nearby citations into batches for
                                 sub-agent claiming, and manages the
                                 claim/submit/status/export workflow with
-                                six verdict types and LaTeX correction
+                                seven verdict types and LaTeX correction
                                 suggestions. \\
     neuroncite-llm    & Library & LLM abstraction layer with zero
                                 workspace-internal dependencies. Defines the
@@ -385,7 +385,8 @@ architectural concern.
                                 crates change. \\
     neuroncite        & Binary  & The main entry point. Parses CLI arguments via
                                 clap to determine the execution mode (web, serve,
-                                index, search, doctor, mcp). In web mode,
+                                index, search, doctor, sessions, export,
+                                annotate, version, models, mcp). In web mode,
                                 initializes the tokio runtime, starts the Axum
                                 server with the embedded SolidJS frontend, and
                                 opens a native OS window (or falls back to the
@@ -1832,11 +1833,14 @@ imported by every other crate.
                       matching PDF file. Threshold: 0.80. Public because the
                       MCP annotate handler calls \texttt{match\_pdfs\_to\_quotes}
                       directly for dry-run validation. \\
-    src/locate.rs   & private & 4-stage text location pipeline. Stage~1: exact
+    src/locate.rs   & private & 5-stage text location pipeline. Stage~1: exact
                       \texttt{str::find()} on pdfium-extracted page text.
                       Stage~2: normalized match (Unicode NFC, soft-hyphen
                       removal, whitespace collapse). Stage~3: fuzzy match via
                       Levenshtein sliding window ($\geq 90\%$ threshold).
+                      Stage~3.5: fallback extraction --- re-extracts page text
+                      using the neuroncite-pdf multi-backend pipeline and
+                      re-attempts stages~1--3 on the fresh text.
                       Stage~4: OCR fallback via Tesseract hOCR bounding boxes
                       (feature-gated). \\
     src/annotate.rs & private & Creates pdfium highlight and text annotations.
@@ -2365,7 +2369,7 @@ The annotation pipeline consists of six sequential stages:
           pattern \texttt{Title (Author, Year).pdf} is decomposed via regex. The combined
           score uses weights $0.6 \times \text{title\_score} + 0.4 \times \text{author\_score}$
           with a minimum threshold of 0.80. Multiple quotes can target the same PDF.
-    \item \textbf{Text Location:} A 4-stage pipeline locates each quote in the PDF text
+    \item \textbf{Text Location:} A 5-stage pipeline locates each quote in the PDF text
           (described below).
     \item \textbf{Annotation Creation:} Highlight annotations with configurable color and
           optional popup text annotations are created via pdfium-render's annotation API.
@@ -2375,7 +2379,7 @@ The annotation pipeline consists of six sequential stages:
           results, saved as \texttt{annotate\_report.json} in the output directory.
 \end{enumerate}
 
-\subsection{4-Stage Text Location Pipeline}
+\subsection{5-Stage Text Location Pipeline}
 
 For each quote, the pipeline iterates all pages of the resolved PDF and attempts
 progressively more tolerant matching strategies. The first successful match terminates
@@ -2401,6 +2405,14 @@ For each window, the normalized Levenshtein similarity is computed. The best-sco
 window above the 0.90 threshold is accepted. A pre-filter skips pages where fewer than
 30\% of the quote's words appear. Pages exceeding 100,000 characters or quotes exceeding
 500 characters are skipped to prevent excessive computation.
+\end{designbox}
+
+\begin{designbox}[Stage 3.5: Fallback Extraction]
+When pdfium text extraction yields no match in stages~1--3, re-extracts page text
+using the neuroncite-pdf multi-backend pipeline (poppler, mupdf, pdfium fallback
+chain). Stages~1--3 are re-attempted on the freshly extracted text. This captures
+content that pdfium's primary extraction missed due to encoding differences between
+PDF text extraction backends.
 \end{designbox}
 
 \begin{designbox}[Stage 4: OCR Fallback (feature-gated)]
@@ -2607,7 +2619,7 @@ exceed the batch size, the batch extends rather than splitting the group.
 
 \subsection{Verdict Types}
 
-Six verdict types capture the sub-agent's assessment:
+Seven verdict types capture the sub-agent's assessment:
 
 \begin{description}[style=nextline, labelwidth=3cm, leftmargin=3.3cm, noitemsep]
     \item[\texttt{supported}] The cited source contains a passage supporting the claim.
@@ -2622,6 +2634,10 @@ Six verdict types capture the sub-agent's assessment:
          Color: \texttt{\#FF8800} (orange).
     \item[\texttt{unverifiable}] The cited source is not in the indexed corpus.
          Color: \texttt{\#CCCCCC} (light gray).
+    \item[\texttt{peripheral\_match}] The claim text was found in the cited source,
+         but exclusively in non-substantive sections (table of contents, bibliography,
+         index, foreword, appendix, glossary).
+         Color: \texttt{\#FFC107} (amber).
 \end{description}
 
 \subsection{Interface Exposure}
@@ -3545,7 +3561,8 @@ to report annotation progress to clients.
                        ``matched'', ``not\_found'', or ``error''. Default:
                        ``pending''. \\
     match\_method    & TEXT                & The location method that found the quote:
-                       ``exact'', ``normalized'', ``fuzzy'', or ``ocr''. NULL while
+                       ``exact'', ``normalized'', ``fuzzy'',
+                       ``fallback\_extract'', or ``ocr''. NULL while
                        pending or if not found. \\
     page             & INTEGER             & 1-based page number where the quote was
                        located. NULL while pending or if not found. \\
@@ -4756,7 +4773,7 @@ through the workspace root and the binary crate. The \texttt{web}, \texttt{mcp},
     \toprule
     \textbf{Command} & \textbf{Result} \\
     \midrule
-    \texttt{cargo build -{}-release} & Builds with default features (ort only). \\
+    \texttt{cargo build -{}-release} & Builds with default features (backend-ort, web, gui, mcp, pdfium, ocr). \\
     \texttt{cargo build -{}-release -{}-all-features} & Builds with all features enabled. \\
     \bottomrule
 \end{tabularx}
