@@ -24,7 +24,7 @@
     "eslint-plugin-solid": "^0.14.0",
     "jsdom": "^29.0.0",
     "rollup-plugin-visualizer": "^7.0.1",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vite-plugin-solid": "^2.11.11",
     "vitest": "^4.1.0"
