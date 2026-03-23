@@ -203,7 +203,7 @@ tao = { version = "0.34", features = ["rwh_06"] }
 
 # WebView embedding (WebView2 on Windows, WebKit on macOS/Linux).
 # Renders the SolidJS frontend inside a native OS window instead of a browser tab.
-wry = "0.54"
+wry = "0.55"
 
 # Porter stemmer for keyword overlap computation in the verify endpoint
 rust-stemmers = "1"
