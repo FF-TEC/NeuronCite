@@ -199,7 +199,7 @@ opener = "0.8"
 
 # Native OS window management (cross-platform: Win32, Cocoa, GTK).
 # Used by the gui feature to create the application window that hosts the WebView.
-tao = { version = "0.34", features = ["rwh_06"] }
+tao = { version = "0.35", features = ["rwh_06"] }
 
 # WebView embedding (WebView2 on Windows, WebKit on macOS/Linux).
 # Renders the SolidJS frontend inside a native OS window instead of a browser tab.
