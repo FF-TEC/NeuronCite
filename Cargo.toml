@@ -151,7 +151,7 @@ pdf-extract = "0.10"
 
 # Low-level PDF document parsing for per-page text extraction. Used as a
 # fallback when pdf-extract's form-feed page separators are missing.
-lopdf = "0.39"
+lopdf = "0.40"
 
 # PDF text extraction via pdfium (handles multi-column layouts, optional)
 pdfium-render = "0.8"
