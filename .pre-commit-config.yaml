@@ -30,11 +30,13 @@ repos:
 
       # 1b: Format check
       # Verifies that all Rust source files conform to rustfmt.toml.
+      # Triggers on Cargo manifest/lock changes in addition to .rs files,
+      # because workspace member additions can introduce unformatted code.
       - id: cargo-fmt
         name: "1b: cargo fmt check"
         entry: cargo fmt --all -- --check
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # 1c: Dependency audit (requires cargo-deny)
@@ -168,19 +170,23 @@ repos:
       # ================================================================
 
       # 3a: Clippy -- default features (shipping configuration)
+      # Triggers on Cargo manifest/lock changes because dependency updates
+      # can introduce new warnings or change lint behavior.
       - id: cargo-clippy-default
         name: "3a: clippy (default)"
         entry: cargo clippy --workspace --all-targets --locked -- -D warnings
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # 3b: Unit and integration tests (default features)
+      # Triggers on Cargo manifest/lock changes because dependency updates
+      # can break compilation or change runtime behavior.
       - id: cargo-test
         name: "3b: cargo test"
         entry: cargo test --workspace --locked
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # 3c: Doc tests (default features)
@@ -195,20 +201,23 @@ repos:
       # ================================================================
 
       # 4a: Clippy -- headless ort (no GUI, no MCP, no pdfium)
+      # Triggers on Cargo manifest/lock changes because dependency updates
+      # can introduce warnings under non-default feature combinations.
       - id: cargo-clippy-headless-ort
         name: "4a: clippy (headless-ort)"
         entry: cargo clippy -p neuroncite --all-targets --locked --no-default-features --features backend-ort -- -D warnings
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # 4b: Clippy -- all features combined (excluding OCR because
       # leptess requires Tesseract/Leptonica C libraries)
+      # Triggers on Cargo manifest/lock changes for the same reason as 4a.
       - id: cargo-clippy-all-no-ocr
         name: "4b: clippy (all-no-ocr)"
         entry: cargo clippy -p neuroncite --all-targets --locked --no-default-features --features backend-ort,gui,mcp,pdfium -- -D warnings
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # ================================================================
@@ -216,11 +225,13 @@ repos:
       # ================================================================
 
       # 5b: Release build
+      # Triggers on .rs source changes and on Cargo manifest/lock changes,
+      # because dependency version bumps affect the compiled binary.
       - id: cargo-release-build
         name: "5b: cargo release build"
         entry: cargo build --workspace --release --locked
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # ================================================================
@@ -228,11 +239,13 @@ repos:
       # ================================================================
 
       # 6a: Documentation build (warnings as errors)
+      # Triggers on Cargo manifest/lock changes because dependency updates
+      # can produce new rustdoc warnings from changed public API surfaces.
       - id: cargo-doc-build
         name: "6a: cargo doc build"
         entry: bash -c 'RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --locked'
         language: system
-        types: [rust]
+        files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false
 
       # 6b: Binary smoke test

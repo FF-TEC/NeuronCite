@@ -151,7 +151,7 @@ pdf-extract = "0.10"
 
 # Low-level PDF document parsing for per-page text extraction. Used as a
 # fallback when pdf-extract's form-feed page separators are missing.
-lopdf = "0.39"
+lopdf = "0.40"
 
 # PDF text extraction via pdfium (handles multi-column layouts, optional)
 pdfium-render = "0.8"
@@ -199,11 +199,11 @@ opener = "0.8"
 
 # Native OS window management (cross-platform: Win32, Cocoa, GTK).
 # Used by the gui feature to create the application window that hosts the WebView.
-tao = { version = "0.34", features = ["rwh_06"] }
+tao = { version = "0.35", features = ["rwh_06"] }
 
 # WebView embedding (WebView2 on Windows, WebKit on macOS/Linux).
 # Renders the SolidJS frontend inside a native OS window instead of a browser tab.
-wry = "0.54"
+wry = "0.55"
 
 # Porter stemmer for keyword overlap computation in the verify endpoint
 rust-stemmers = "1"
@@ -232,7 +232,7 @@ reqwest = { version = "0.12", features = ["json", "blocking", "rustls-tls", "gzi
 futures-util = "0.3"
 
 # HTML parsing and URL handling for the neuroncite-html crate
-scraper = "0.25"
+scraper = "0.26"
 url = "2"
 
 # Embeds compiled frontend assets into the binary at compile time
