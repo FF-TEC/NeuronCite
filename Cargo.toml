@@ -96,7 +96,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Cryptographic hashing for content deduplication and model checksum verification
-sha2 = "0.10"
+sha2 = "0.11"
 
 # Constant-time comparison for bearer token authentication (prevents timing attacks)
 subtle = "2"
