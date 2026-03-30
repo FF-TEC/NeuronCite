@@ -154,7 +154,7 @@ pdf-extract = "0.10"
 lopdf = "0.40"
 
 # PDF text extraction via pdfium (handles multi-column layouts, optional)
-pdfium-render = "0.8"
+pdfium-render = "0.9"
 
 # Image encoding/decoding (used by the OCR module to convert pdfium bitmaps
 # to PNG bytes for Tesseract CLI input). Must match the version used by
