@@ -111,7 +111,7 @@ uuid = { version = "1", features = ["v4"] }
 # workspace are enabled. "full" was pulling in ~8 unused sub-features (fs,
 # io-std, io-util, process, time, parking_lot, test-util) that increase
 # compile time and binary size.
-tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "sync", "signal", "net", "time"] }
+tokio = { version = "1.52", features = ["rt-multi-thread", "macros", "sync", "signal", "net", "time"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 axum = "0.8"
 tower = "0.5"
