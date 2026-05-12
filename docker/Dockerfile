@@ -42,7 +42,7 @@ ARG GPU=nvidia
 # Compiles the SolidJS + TypeScript frontend into static assets. The output
 # in dist/ is later embedded into the Rust binary via rust-embed.
 
-FROM node:25-bookworm AS frontend
+FROM node:26-bookworm AS frontend
 
 WORKDIR /frontend
 
