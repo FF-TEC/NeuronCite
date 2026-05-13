@@ -57,7 +57,7 @@ env:
   # Treat all compiler warnings as errors, matching the CI pipeline policy.
   RUSTFLAGS: "-D warnings"
   # Node.js version for the SolidJS frontend build.
-  NODE_VERSION: "25"
+  NODE_VERSION: "26"
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
