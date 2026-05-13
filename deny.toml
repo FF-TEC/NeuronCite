@@ -103,6 +103,17 @@ ignore = [
     "RUSTSEC-2024-0418",
     "RUSTSEC-2024-0419",
     "RUSTSEC-2024-0420",
+
+    # RUSTSEC-2026-0097: rand is unsound with a custom logger using rand::rng().
+    # Transitive dependency from hnsw_rs (rand 0.9.x) and lopdf/uuid (rand 0.10.x).
+    # No fix released upstream as of 2026-05; the project does not install a
+    # custom global logger that interacts with rand's thread-local RNG.
+    "RUSTSEC-2026-0097",
+
+    # RUSTSEC-2026-0105: core2 0.4.0 is unmaintained and all versions yanked.
+    # Transitive dependency via image -> ravif -> rav1e -> bitstream-io. No
+    # alternative dependency path exists without forking image or rav1e.
+    "RUSTSEC-2026-0105",
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────

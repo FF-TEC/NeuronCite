@@ -182,9 +182,15 @@ repos:
       # 3b: Unit and integration tests (default features)
       # Triggers on Cargo manifest/lock changes because dependency updates
       # can break compilation or change runtime behavior.
+      #
+      # --test-threads=1 serializes test execution. pdfium-render 0.9 loads
+      # the pdfium dynamic library per test invocation; concurrent
+      # LoadLibrary/FreeLibrary calls abort the process on Windows and
+      # produce intermittent failures on Linux. Tests run single-threaded
+      # until a shared pdfium handle is introduced.
       - id: cargo-test
         name: "3b: cargo test"
-        entry: cargo test --workspace --locked
+        entry: cargo test --workspace --locked -- --test-threads=1
         language: system
         files: '(\.rs|Cargo\.toml|Cargo\.lock)$'
         pass_filenames: false

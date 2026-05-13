@@ -778,7 +778,7 @@ fn process_single_pdf(
             let check_count = (pages.len() as usize).min(3);
             let mut has_native_text = false;
             for i in 0..check_count {
-                if let Ok(page) = pages.get(i as u16)
+                if let Ok(page) = pages.get((i as u16).into())
                     && let Ok(text) = page.text()
                     && !text.all().trim().is_empty()
                 {
@@ -987,7 +987,7 @@ fn process_single_pdf(
         // five stages and goes straight to pdfium character bounds.
         let locate_result = if let Some(pre) = pre_matches.get(&(pdf_idx, quote_idx)) {
             let page_idx_u16 = (pre.page_number - 1) as u16;
-            match document.pages().get(page_idx_u16) {
+            match document.pages().get(page_idx_u16.into()) {
                 Ok(page) => match page.text() {
                     Ok(text_page) => {
                         let boxes =
@@ -1085,7 +1085,7 @@ fn process_single_pdf(
 
                 // Create annotations on the page.
                 let page_idx = (match_result.page_number - 1) as u16;
-                let mut page = match document.pages().get(page_idx) {
+                let mut page = match document.pages().get(page_idx.into()) {
                     Ok(p) => p,
                     Err(e) => {
                         quote_reports.push(QuoteReport {
@@ -1172,7 +1172,7 @@ fn process_single_pdf(
                 // passage to a specific chunk with page coordinates.
                 if let Some(hint_page) = row.page {
                     let page_idx = (hint_page - 1) as u16;
-                    if let Ok(mut fallback_page) = document.pages().get(page_idx) {
+                    if let Ok(mut fallback_page) = document.pages().get(page_idx.into()) {
                         let page_match = annotate::create_page_level_match(
                             &fallback_page,
                             hint_page,

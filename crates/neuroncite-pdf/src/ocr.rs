@@ -378,8 +378,9 @@ fn render_page_to_png(
         PdfError::Ocr(format!("invalid page number: {page_number} (must be >= 1)"))
     })?;
 
-    // Pdfium's pages().get() accepts a u16. Verify the page index fits within
-    // the u16 range to prevent silent truncation of page numbers above 65535.
+    // Pdfium's pages().get() accepts a PdfPageIndex (i32). Verify the page
+    // index fits within the u16 range to prevent runaway page numbers from
+    // crawled documents; real PDFs do not exceed 65535 pages in practice.
     let page_index_u16: u16 = u16::try_from(page_index).map_err(|_| {
         PdfError::Ocr(format!(
             "page number {page_number} exceeds the maximum supported page index (65536)"
@@ -388,7 +389,7 @@ fn render_page_to_png(
 
     let page = document
         .pages()
-        .get(page_index_u16)
+        .get(page_index_u16.into())
         .map_err(|e| PdfError::Ocr(format!("failed to access page {page_number}: {e}")))?;
 
     // Determine page dimensions in points and select render DPI.
@@ -421,7 +422,11 @@ fn render_page_to_png(
     // ~2-3 seconds (default level 6) to ~100-200ms for a 300 DPI A4 page
     // without affecting pixel data: both levels produce lossless PNG and
     // Tesseract OCR output is identical regardless of compression level.
-    let image = bitmap.as_image();
+    let image = bitmap.as_image().map_err(|e| {
+        PdfError::Ocr(format!(
+            "failed to convert bitmap to image for page {page_number}: {e}"
+        ))
+    })?;
     let mut png_bytes = Vec::new();
     {
         use image::codecs::png::{CompressionType, FilterType, PngEncoder};
@@ -717,7 +722,7 @@ pub fn render_page_to_png_with_dpi(
 
     let page = document
         .pages()
-        .get(page_index_u16)
+        .get(page_index_u16.into())
         .map_err(|e| PdfError::Ocr(format!("failed to access page {page_number}: {e}")))?;
 
     let width_points = page.width().value as f64;
@@ -793,7 +798,7 @@ pub fn ocr_page_with_hocr(
     })?;
     let page = document
         .pages()
-        .get(page_index_u16)
+        .get(page_index_u16.into())
         .map_err(|e| PdfError::Ocr(format!("failed to access page {page_number}: {e}")))?;
 
     let width_points = page.width().value as f64;
@@ -930,7 +935,7 @@ pub fn ocr_pdf_pages_batch_hocr(
                             return None;
                         }
                     };
-                    let page = match document.pages().get(page_index_u16) {
+                    let page = match document.pages().get(page_index_u16.into()) {
                         Ok(p) => p,
                         Err(e) => {
                             tracing::warn!(page = page_num, error = %e, "page access failed");

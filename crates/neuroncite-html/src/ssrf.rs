@@ -50,7 +50,7 @@ impl SsrfSafeResolver {
     /// Creates a resolver that delegates to the platform resolver and filters
     /// every address before reqwest can connect to it.
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -65,7 +65,9 @@ impl Resolve for SsrfSafeResolver {
                 .collect();
 
             if filtered.is_empty() {
-                return Err(format!("DNS resolution returned no addresses for '{hostname}'").into());
+                return Err(
+                    format!("DNS resolution returned no addresses for '{hostname}'").into(),
+                );
             }
 
             for addr in &filtered {

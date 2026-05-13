@@ -326,8 +326,9 @@ pub fn locate_quote(
             order.push(hint_idx);
         }
         for idx in 0..page_count {
-            if Some(idx) != hint_page_idx {
-                order.push(idx);
+            let idx_u16 = idx as u16;
+            if Some(idx_u16) != hint_page_idx {
+                order.push(idx_u16);
             }
         }
         order
@@ -355,7 +356,7 @@ pub fn locate_quote(
             break;
         }
 
-        let page = match document.pages().get(page_idx) {
+        let page = match document.pages().get(page_idx.into()) {
             Ok(p) => p,
             Err(_) => continue,
         };
@@ -442,7 +443,7 @@ pub fn locate_quote(
             // Try exact match on the combined text.
             if combined.contains(quote_trimmed) {
                 let page_number = pg_a as usize + 1;
-                if let Ok(page) = document.pages().get(pg_a) {
+                if let Ok(page) = document.pages().get(pg_a.into()) {
                     let result = crate::annotate::create_page_level_match(
                         &page,
                         page_number,
@@ -460,7 +461,7 @@ pub fn locate_quote(
             let norm_combined = normalize_text(&combined);
             if norm_combined.contains(&norm_quote) {
                 let page_number = pg_a as usize + 1;
-                if let Ok(page) = document.pages().get(pg_a) {
+                if let Ok(page) = document.pages().get(pg_a.into()) {
                     let result = crate::annotate::create_page_level_match(
                         &page,
                         page_number,
@@ -1276,7 +1277,7 @@ fn find_via_fallback_extraction(
         // dimensions (available even for scanned PDFs) with a 72pt inset
         // to approximate the text content area.
         let page_idx = (*page_number - 1) as u16;
-        if let Ok(page) = document.pages().get(page_idx) {
+        if let Ok(page) = document.pages().get(page_idx.into()) {
             let page_width = page.width().value;
             let page_height = page.height().value;
 
@@ -1451,7 +1452,7 @@ fn match_hocr_on_pages(
         // Get page height from the already-loaded document for Y-axis
         // inversion (PDF coordinate system is bottom-up).
         let page_idx = (page_number - 1) as u16;
-        let page_height = match document.pages().get(page_idx) {
+        let page_height = match document.pages().get(page_idx.into()) {
             Ok(page) => page.height().value,
             Err(_) => continue,
         };
@@ -1497,7 +1498,7 @@ fn match_hocr_on_pages(
         let dpi = *render_dpi as f32;
         let scale = 72.0 / dpi;
         let page_idx = (fb_page - 1) as u16;
-        if let Ok(page) = document.pages().get(page_idx) {
+        if let Ok(page) = document.pages().get(page_idx.into()) {
             let page_height = page.height().value;
             let boxes: Vec<[f32; 4]> = hocr_words
                 .iter()
