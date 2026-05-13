@@ -124,7 +124,13 @@ fn sha256_of_file(path: &Path) -> Result<String, StoreError> {
         }
         hasher.update(&buf[..n]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    let digest = hasher.finalize();
+    let hex: String = digest.iter().fold(String::with_capacity(64), |mut s, b| {
+        use std::fmt::Write;
+        let _ = write!(s, "{b:02x}");
+        s
+    });
+    Ok(hex)
 }
 
 /// Loads the HNSW graph from a mutable `HnswIo` reference and transmutes the

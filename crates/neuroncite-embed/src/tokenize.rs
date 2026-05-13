@@ -152,7 +152,7 @@ impl TokenizerWrapper {
         let mut attention_masks = Vec::with_capacity(texts.len());
         let mut padded_offsets = Vec::with_capacity(texts.len());
 
-        for (ids, offsets) in all_ids.into_iter().zip(all_offsets.into_iter()) {
+        for (ids, offsets) in all_ids.into_iter().zip(all_offsets) {
             let real_len = ids.len();
             let padding_count = pad_length - real_len;
 

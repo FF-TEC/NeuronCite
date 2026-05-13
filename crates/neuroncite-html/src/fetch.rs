@@ -289,7 +289,11 @@ pub fn cache_path_for_url(cache_dir: &Path, url: &str) -> PathBuf {
     let mut hasher = Sha256::new();
     hasher.update(normalized.as_bytes());
     let hash = hasher.finalize();
-    let hex = format!("{hash:x}");
+    let hex: String = hash.iter().fold(String::with_capacity(64), |mut s, b| {
+        use std::fmt::Write;
+        let _ = write!(s, "{b:02x}");
+        s
+    });
     cache_dir.join(format!("{hex}.html"))
 }
 

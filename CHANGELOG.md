@@ -5,6 +5,52 @@ All notable changes to NeuronCite are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-05-13
+
+### Security
+
+- **SSRF redirect validation:** the `neuroncite-html` HTTP client now revalidates
+  every redirect target against the SSRF allow-list (RFC1918, loopback,
+  link-local, multicast, and metadata IPs are blocked) instead of trusting the
+  initial DNS resolution, closing a redirect-chain bypass
+- **rustls-webpki 0.103.10 -> 0.103.13:** fixes RUSTSEC-2026-0098 (name
+  constraints for URI names incorrectly accepted), RUSTSEC-2026-0099 (name
+  constraints accepted for wildcard certificates), and RUSTSEC-2026-0104
+  (reachable panic in CRL parsing)
+
+### Changed
+
+- **Workspace dependencies bulk update:**
+  - `sha2` 0.10 -> 0.11
+  - `tokio` 1.43 -> 1.52
+  - `clap` 4.5 -> 4.6
+  - `pdfium-render` 0.8 -> 0.9
+  - `arc-swap`, `libc`, `proptest`, `semver`, `unicode-segmentation`, `uuid`
+    bumped to latest compatible patch/minor via `cargo update`
+- **Frontend dependencies bulk update:**
+  - `@typescript-eslint/eslint-plugin` 8.57.1 -> 8.59.3
+  - `@typescript-eslint/parser` 8.57.1 -> 8.59.3
+  - `jsdom` 29.0.0 -> 29.1.1
+  - `typescript` 6.0.0 -> 6.0.3
+  - `vite` 8.0.0 -> 8.0.12
+  - `vite-plugin-solid` 2.11.11 -> 2.11.12
+  - `vitest` 4.1.0 -> 4.1.6
+  - `eslint`, `eslint-plugin-jsx-a11y`, `eslint-plugin-solid`, `solid-js`
+    bumped to latest compatible patch/minor via `npm update`
+- **Docker base images:** `node:25-bookworm` -> `node:26-bookworm`,
+  `rust:1.94-bookworm` -> `rust:1.95-bookworm`
+- **GitHub Actions:** `softprops/action-gh-release` v2 -> v3 (Node 20 -> 24
+  runtime; release input schema unchanged)
+- **CI audit ignore-list:** added RUSTSEC-2026-0097 (`rand` unsound with custom
+  logger; transitive via `hnsw_rs`, `lopdf`, `uuid`) and RUSTSEC-2026-0105
+  (`core2` unmaintained and yanked; transitive via
+  `image -> ravif -> rav1e -> bitstream-io`) - both have no upstream fix path
+- **CI and pre-commit test execution:** all `cargo test` invocations now run
+  with `--test-threads=1`. `pdfium-render` 0.9 loads the pdfium dynamic
+  library per test invocation, and concurrent `LoadLibrary`/`FreeLibrary`
+  calls abort the process on Windows and produce intermittent failures on
+  Linux. Tests run serially until a shared pdfium handle is introduced
+
 ## [0.1.1] - 2026-03-17
 
 ### Added

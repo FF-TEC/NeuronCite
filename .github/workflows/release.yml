@@ -57,7 +57,7 @@ env:
   # Treat all compiler warnings as errors, matching the CI pipeline policy.
   RUSTFLAGS: "-D warnings"
   # Node.js version for the SolidJS frontend build.
-  NODE_VERSION: "25"
+  NODE_VERSION: "26"
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
@@ -788,7 +788,7 @@ jobs:
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release and upload assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

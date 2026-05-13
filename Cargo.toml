@@ -30,7 +30,7 @@ members = [
 # here updates all 16 crates at once; the frontend package.json must be bumped
 # manually (it is private and never published to npm).
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/FF-TEC/NeuronCite"
@@ -96,7 +96,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Cryptographic hashing for content deduplication and model checksum verification
-sha2 = "0.10"
+sha2 = "0.11"
 
 # Constant-time comparison for bearer token authentication (prevents timing attacks)
 subtle = "2"
@@ -111,7 +111,7 @@ uuid = { version = "1", features = ["v4"] }
 # workspace are enabled. "full" was pulling in ~8 unused sub-features (fs,
 # io-std, io-util, process, time, parking_lot, test-util) that increase
 # compile time and binary size.
-tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "sync", "signal", "net", "time"] }
+tokio = { version = "1.52", features = ["rt-multi-thread", "macros", "sync", "signal", "net", "time"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 axum = "0.8"
 tower = "0.5"
@@ -119,7 +119,7 @@ tower-http = { version = "0.6", features = ["cors"] }
 
 
 # CLI argument parsing with derive macros
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 
 # SQLite database and connection pooling
 rusqlite = { version = "0.32", features = ["bundled"] }
@@ -154,7 +154,7 @@ pdf-extract = "0.10"
 lopdf = "0.40"
 
 # PDF text extraction via pdfium (handles multi-column layouts, optional)
-pdfium-render = "0.8"
+pdfium-render = "0.9"
 
 # Image encoding/decoding (used by the OCR module to convert pdfium bitmaps
 # to PNG bytes for Tesseract CLI input). Must match the version used by

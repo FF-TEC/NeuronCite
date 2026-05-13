@@ -42,7 +42,7 @@ ARG GPU=nvidia
 # Compiles the SolidJS + TypeScript frontend into static assets. The output
 # in dist/ is later embedded into the Rust binary via rust-embed.
 
-FROM node:25-bookworm AS frontend
+FROM node:26-bookworm AS frontend
 
 WORKDIR /frontend
 
@@ -67,7 +67,7 @@ RUN npx vite build
 # two-phase approach: first build dependencies with stub source files (cached
 # across rebuilds), then compile the actual source code.
 
-FROM rust:1.94-bookworm AS builder
+FROM rust:1.95-bookworm AS builder
 
 # Build-time system dependencies for native crate compilation.
 # pkg-config + libssl-dev: required by reqwest's optional openssl backend

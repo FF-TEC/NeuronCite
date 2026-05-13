@@ -454,7 +454,7 @@ pub fn inspect_pdf_with_pdfium(
 
     for page_num in page_range {
         let page_idx = (page_num - 1) as u16;
-        let page = match document.pages().get(page_idx) {
+        let page = match document.pages().get(page_idx.into()) {
             Ok(p) => p,
             Err(e) => {
                 tracing::warn!(page = page_num, "failed to access page: {e}");

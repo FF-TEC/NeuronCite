@@ -40,10 +40,14 @@ jobs:
       # causes advisory warnings to be treated as hard failures.
       # GTK3 binding advisories are suppressed because no maintained
       # replacement exists until wry migrates to GTK4 upstream.
+      # RUSTSEC-2026-0097: rand unsound with custom logger using rand::rng();
+      #   pulled in transitively by hnsw_rs, lopdf, uuid. No fix released upstream.
+      # RUSTSEC-2026-0105: core2 0.4.0 unmaintained and yanked; pulled in via
+      #   image -> ravif -> rav1e -> bitstream-io. No alternative dependency path.
       - uses: actions-rust-lang/audit@v1
         with:
           denyWarnings: true
-          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0057,RUSTSEC-2025-0119,RUSTSEC-2025-0141
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0057,RUSTSEC-2025-0119,RUSTSEC-2025-0141,RUSTSEC-2026-0097,RUSTSEC-2026-0105
 
   # ──────────────────────────────────────────────────────────────
   # Stage 1: Format check
@@ -186,9 +190,13 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # Run 1: Default test ordering (parallel)
+      # Run 1: Default test ordering (single-threaded for pdfium safety).
+      # pdfium-render 0.9 loads the pdfium dynamic library per test invocation;
+      # concurrent LoadLibrary/FreeLibrary aborts the process on Windows and
+      # produces intermittent failures on Linux. Tests run single-threaded
+      # until a shared pdfium handle is introduced.
       - name: Run tests (default order)
-        run: cargo test --workspace ${{ matrix.features }}
+        run: cargo test --workspace ${{ matrix.features }} -- --test-threads=1
 
       # Run 2: Reversed single-threaded execution to detect order-dependent failures
       - name: Run tests (reversed, single-threaded)
@@ -219,7 +227,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Run integration tests in release mode
-        run: cargo test --release --workspace --features backend-ort
+        run: cargo test --release --workspace --features backend-ort -- --test-threads=1
 
   # ──────────────────────────────────────────────────────────────
   # Stage 4: Doc tests
@@ -270,7 +278,7 @@ jobs:
         run: cargo install cargo-llvm-cov --locked
 
       - name: Generate coverage report
-        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info -- --test-threads=1
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
