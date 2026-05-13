@@ -33,7 +33,7 @@ use tokio::io::AsyncWriteExt;
 use tracing::{debug, warn};
 
 use crate::error::HtmlError;
-use crate::ssrf::validate_url_no_ssrf;
+use crate::ssrf::{send_request_with_ssrf_redirects, validate_url_no_ssrf};
 
 /// Classification of a URL target based on HTTP response headers.
 /// Determined by sending an HTTP HEAD request and inspecting the
@@ -91,7 +91,15 @@ pub async fn classify_url(client: &reqwest::Client, url: &str) -> UrlSourceType 
 
     // Send an HTTP HEAD request to inspect the Content-Type header without
     // downloading the full response body.
-    match client.head(url).send().await {
+    let response = send_request_with_ssrf_redirects(
+        client,
+        reqwest::Method::HEAD,
+        url,
+        crate::fetch::MAX_REDIRECTS,
+    )
+    .await;
+
+    match response {
         Ok(response) => {
             let content_type = response
                 .headers()
@@ -158,12 +166,15 @@ pub async fn download_pdf(
     output_dir: &Path,
     filename: &str,
 ) -> Result<PathBuf, HtmlError> {
-    // SSRF protection: reject URLs that resolve to private/loopback/link-local IPs.
-    validate_url_no_ssrf(url)?;
-
     debug!(url = url, filename = filename, "downloading PDF");
 
-    let response = client.get(url).send().await?;
+    let response = send_request_with_ssrf_redirects(
+        client,
+        reqwest::Method::GET,
+        url,
+        crate::fetch::MAX_REDIRECTS,
+    )
+    .await?;
     let status = response.status();
     let final_url = response.url().to_string();
 
