@@ -576,10 +576,8 @@ pub async fn multi_search(
 
         // Build a permutation index, then apply it in-place by zipping results
         // and session_ids into a sortable vec, avoiding clone-for-reorder.
-        let mut paired: Vec<(neuroncite_core::SearchResult, i64)> = results
-            .into_iter()
-            .zip(result_session_ids.into_iter())
-            .collect();
+        let mut paired: Vec<(neuroncite_core::SearchResult, i64)> =
+            results.into_iter().zip(result_session_ids).collect();
         paired.sort_by(|a, b| {
             b.0.score
                 .partial_cmp(&a.0.score)

@@ -2693,15 +2693,11 @@ fn repair_truncated_json(s: &str) -> String {
             match ch {
                 '{' => stack.push('{'),
                 '[' => stack.push('['),
-                '}' => {
-                    if stack.last() == Some(&'{') {
-                        stack.pop();
-                    }
+                '}' if stack.last() == Some(&'{') => {
+                    stack.pop();
                 }
-                ']' => {
-                    if stack.last() == Some(&'[') {
-                        stack.pop();
-                    }
+                ']' if stack.last() == Some(&'[') => {
+                    stack.pop();
                 }
                 _ => {}
             }
