@@ -29,11 +29,118 @@
 // only contacts hardcoded public API domains (unpaywall, semantic scholar,
 // openalex, doi.org) and never uses user-supplied URLs for its HTTP calls.
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
+use std::sync::Arc;
 
+use reqwest::dns::{Addrs, Name, Resolve, Resolving};
 use tracing::warn;
 
 use crate::error::HtmlError;
+
+/// A reqwest DNS resolver wrapper that blocks non-public addresses at the
+/// resolution point used by the actual HTTP connection. This closes the
+/// validation/request DNS rebinding gap: even if a hostname resolves to a
+/// public address during `validate_url_no_ssrf()` and later resolves to a
+/// loopback/private/link-local address during reqwest's connect path, the
+/// connection is rejected before any socket is opened.
+#[derive(Debug, Default)]
+pub struct SsrfSafeResolver;
+
+impl SsrfSafeResolver {
+    /// Creates a resolver that delegates to the platform resolver and filters
+    /// every address before reqwest can connect to it.
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Resolve for SsrfSafeResolver {
+    fn resolve(&self, name: Name) -> Resolving {
+        let hostname = name.as_str().to_string();
+
+        Box::pin(async move {
+            let filtered: Vec<SocketAddr> = tokio::net::lookup_host((hostname.as_str(), 0))
+                .await
+                .map_err(|err| format!("DNS resolution failed for '{hostname}': {err}"))?
+                .collect();
+
+            if filtered.is_empty() {
+                return Err(format!("DNS resolution returned no addresses for '{hostname}'").into());
+            }
+
+            for addr in &filtered {
+                let ip = addr.ip();
+                if is_blocked_ip(&ip) {
+                    warn!(
+                        host = %hostname,
+                        resolved_ip = %ip,
+                        "SSRF: reqwest resolver blocked non-public IP address"
+                    );
+                    return Err(format!(
+                        "host '{hostname}' resolved to blocked IP {ip} during HTTP connect"
+                    )
+                    .into());
+                }
+            }
+
+            Ok(Box::new(filtered.into_iter()) as Addrs)
+        })
+    }
+}
+
+/// Returns the shared SSRF-safe resolver for reqwest clients.
+pub fn ssrf_safe_resolver() -> Arc<SsrfSafeResolver> {
+    Arc::new(SsrfSafeResolver::new())
+}
+
+/// Sends an HTTP request with SSRF validation before the initial request and
+/// before every redirect hop. The reqwest client must be configured with
+/// automatic redirects disabled so redirects cannot be followed before their
+/// targets are validated.
+pub async fn send_request_with_ssrf_redirects(
+    client: &reqwest::Client,
+    method: reqwest::Method,
+    url: &str,
+    max_redirects: usize,
+) -> Result<reqwest::Response, HtmlError> {
+    let mut current_url = url::Url::parse(url)?;
+    validate_url_no_ssrf(current_url.as_str())?;
+
+    for redirect_count in 0..=max_redirects {
+        let response = client
+            .request(method.clone(), current_url.clone())
+            .send()
+            .await?;
+
+        if !response.status().is_redirection() {
+            return Ok(response);
+        }
+
+        if redirect_count == max_redirects {
+            return Err(HtmlError::Ssrf(format!(
+                "too many redirects while fetching '{}'; limit is {max_redirects}",
+                current_url
+            )));
+        }
+
+        let location = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .ok_or_else(|| {
+                HtmlError::Ssrf(format!(
+                    "redirect from '{}' did not include a valid Location header",
+                    current_url
+                ))
+            })?;
+
+        let next_url = current_url.join(location)?;
+        validate_url_no_ssrf(next_url.as_str())?;
+        current_url = next_url;
+    }
+
+    unreachable!("redirect loop returns or errors within the configured limit")
+}
 
 /// Validates that a URL does not resolve to any private, loopback, link-local,
 /// or otherwise non-routable IP address. This prevents SSRF attacks where a
@@ -682,6 +789,18 @@ mod tests {
         assert!(
             !is_blocked_ip(&ip),
             "::ffff:8.8.8.8 must be allowed (IPv4-mapped public IP)"
+        );
+    }
+
+    /// T-SSRF-V-045: the reqwest DNS resolver blocks loopback results at connect time.
+    #[tokio::test]
+    async fn t_ssrf_v_045_safe_resolver_blocks_localhost() {
+        let resolver = SsrfSafeResolver::new();
+        let name: Name = "localhost".parse().expect("localhost is a valid DNS name");
+        let result = resolver.resolve(name).await;
+        assert!(
+            result.is_err(),
+            "SSRF-safe resolver must reject localhost before reqwest connects"
         );
     }
 }

@@ -36,7 +36,7 @@ use tracing::{debug, info, warn};
 use crate::error::HtmlError;
 use crate::fetch::{build_http_client, fetch_url};
 use crate::parse::extract_links;
-use crate::ssrf::validate_url_no_ssrf;
+use crate::ssrf::{send_request_with_ssrf_redirects, validate_url_no_ssrf};
 use crate::types::{CrawlConfig, FetchResult};
 
 /// Crawls a website starting from the given URL according to the CrawlConfig.
@@ -237,7 +237,13 @@ pub async fn fetch_sitemap(
 
     debug!(url = sitemap_url.as_str(), "fetching sitemap.xml");
 
-    let response = client.get(&sitemap_url).send().await?;
+    let response = send_request_with_ssrf_redirects(
+        client,
+        reqwest::Method::GET,
+        &sitemap_url,
+        crate::fetch::MAX_REDIRECTS,
+    )
+    .await?;
     if !response.status().is_success() {
         return Err(HtmlError::Crawl(format!(
             "sitemap.xml returned HTTP {}",

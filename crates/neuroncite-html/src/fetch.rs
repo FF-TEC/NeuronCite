@@ -32,7 +32,7 @@ use tracing::{debug, warn};
 
 use crate::error::HtmlError;
 use crate::parse;
-use crate::ssrf::validate_url_no_ssrf;
+use crate::ssrf::{send_request_with_ssrf_redirects, ssrf_safe_resolver};
 use crate::types::{FetchResult, WebMetadata};
 
 /// User-Agent header value sent with all HTTP requests. Identifies the
@@ -44,10 +44,11 @@ const USER_AGENT: &str = "NeuronCite/0.1 (semantic-search-engine; +https://neuro
 const TIMEOUT_SECS: u64 = 30;
 
 /// Maximum number of HTTP redirects to follow before failing.
-const MAX_REDIRECTS: usize = 10;
+pub(crate) const MAX_REDIRECTS: usize = 10;
 
 /// Builds a reqwest::Client with a caller-specified timeout. Configured with
-/// the NeuronCite User-Agent, the given timeout, and a 10-redirect limit.
+/// the NeuronCite User-Agent, the given timeout, manual redirect handling,
+/// and an SSRF-filtering DNS resolver.
 /// TLS uses rustls for cross-platform compatibility without OpenSSL
 /// dependencies.
 ///
@@ -64,7 +65,8 @@ pub fn build_http_client_with_timeout(timeout_secs: u64) -> Result<reqwest::Clie
     let client = reqwest::Client::builder()
         .user_agent(USER_AGENT)
         .timeout(std::time::Duration::from_secs(timeout_secs))
-        .redirect(reqwest::redirect::Policy::limited(MAX_REDIRECTS))
+        .redirect(reqwest::redirect::Policy::none())
+        .dns_resolver(ssrf_safe_resolver())
         .build()?;
     Ok(client)
 }
@@ -109,9 +111,6 @@ pub async fn fetch_url(
     cache_dir: &Path,
     _strip_boilerplate: bool,
 ) -> Result<FetchResult, HtmlError> {
-    // SSRF protection: reject URLs that resolve to private/loopback/link-local IPs.
-    validate_url_no_ssrf(url)?;
-
     debug!(url = url, "fetching web page");
 
     // Validate the URL before making the request.
@@ -119,7 +118,8 @@ pub async fn fetch_url(
     let domain = parsed_url.host_str().unwrap_or("unknown").to_string();
 
     // Send the HTTP GET request.
-    let response = client.get(url).send().await?;
+    let response =
+        send_request_with_ssrf_redirects(client, reqwest::Method::GET, url, MAX_REDIRECTS).await?;
     let http_status = response.status().as_u16();
     let content_type = response
         .headers()
