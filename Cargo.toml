@@ -144,7 +144,7 @@ arc-swap = "1"
 memmap2 = "0.9"
 
 # HuggingFace tokenizer for subword tokenization across all embedding backends
-tokenizers = "0.22"
+tokenizers = "0.23"
 
 # PDF text extraction (pure Rust, the default backend)
 pdf-extract = "0.10"
