@@ -221,7 +221,7 @@ strsim = "0.11"
 regex = "1"
 
 # Excel workbook generation for citation verification export
-rust_xlsxwriter = "0.94"
+rust_xlsxwriter = "0.95"
 
 # Date/time formatting for annotation report timestamps
 chrono = "0.4"
