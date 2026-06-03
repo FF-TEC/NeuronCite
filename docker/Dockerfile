@@ -67,7 +67,7 @@ RUN npx vite build
 # two-phase approach: first build dependencies with stub source files (cached
 # across rebuilds), then compile the actual source code.
 
-FROM rust:1.95-bookworm AS builder
+FROM rust:1.96-bookworm AS builder
 
 # Build-time system dependencies for native crate compilation.
 # pkg-config + libssl-dev: required by reqwest's optional openssl backend
