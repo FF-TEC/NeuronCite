@@ -93,7 +93,7 @@ jobs:
     needs: validate-tag
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -153,7 +153,7 @@ jobs:
     needs: validate-tag
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -221,7 +221,7 @@ jobs:
     needs: validate-tag
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -288,7 +288,7 @@ jobs:
     needs: validate-tag
     runs-on: ubuntu-22.04-arm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -349,7 +349,7 @@ jobs:
     needs: validate-tag
     runs-on: ubuntu-22.04-arm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -416,7 +416,7 @@ jobs:
     needs: validate-tag
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -503,7 +503,7 @@ jobs:
     needs: validate-tag
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust stable toolchain with x86_64 target
         uses: dtolnay/rust-toolchain@stable
@@ -631,7 +631,7 @@ jobs:
             runtime_base: ubuntu:22.04
             platform: linux/arm64
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up QEMU for cross-platform builds
         if: matrix.platform == 'linux/arm64'
