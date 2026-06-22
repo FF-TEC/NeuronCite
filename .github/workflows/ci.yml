@@ -34,7 +34,7 @@ jobs:
     name: Dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Audit for known vulnerabilities. The denyWarnings input
       # causes advisory warnings to be treated as hard failures.
@@ -57,7 +57,7 @@ jobs:
     name: Format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -112,7 +112,7 @@ jobs:
             name: mcp-only
             features: "--features mcp"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates. libwebkit2gtk-4.1-dev provides all
@@ -178,7 +178,7 @@ jobs:
             name: mcp-only
             features: "--features mcp"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -215,7 +215,7 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -238,7 +238,7 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -261,7 +261,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -303,7 +303,7 @@ jobs:
         # but only for the ort-only feature combination.
         os: [windows-latest, ubuntu-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -340,7 +340,7 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -417,7 +417,7 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -462,7 +462,7 @@ jobs:
             artifact-name: neuroncite-macos-arm64
             binary-path: target/release/neuroncite
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
