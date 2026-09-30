@@ -56,6 +56,12 @@ updates:
       # flat config format and a compatible jsx-a11y plugin version.
       - dependency-name: "eslint"
         versions: [">= 10"]
+      # typescript is pinned to v6 because @typescript-eslint (parser and
+      # eslint-plugin, latest 8.x) declares a peer range of
+      # typescript ">=4.8.4 <6.1.0". TypeScript 7 makes `npm ci` fail with
+      # ERESOLVE. Lift this once typescript-eslint supports TypeScript 7.
+      - dependency-name: "typescript"
+        versions: [">= 7"]
 
   # Docker base images (docker/Dockerfile).
   # Monitors nvidia/cuda, rocm/dev-ubuntu, ubuntu, node, and rust base
