@@ -5,6 +5,80 @@ All notable changes to NeuronCite are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-09-30
+
+### Security
+
+- **RustSec advisories fixed via dependency updates** (the CI dependency audit
+  had been failing on `main` since 2026-06-22):
+  - `rustls` 0.23.40 -> 0.23.45 (RUSTSEC-2026-0285, TLS 1.3 handshake messages
+    accepted across encryption level boundaries)
+  - `h2` 0.4.14 -> 0.4.19 (RUSTSEC-2026-0258, unbounded empty DATA frames)
+  - `quinn-proto` 0.11.14 -> 0.11.19 (RUSTSEC-2026-0185, remote memory
+    exhaustion from out-of-order stream reassembly)
+  - `crossbeam-epoch` 0.9.18 -> 0.9.21 (RUSTSEC-2026-0204)
+  - `lopdf` 0.38/0.40 -> 0.42 (RUSTSEC-2026-0187, stack overflow on deeply
+    nested PDF objects); `pdf-extract` 0.10 -> 0.12 so that both PDF
+    extraction paths share one patched `lopdf`
+  - `quick-xml` 0.39 -> 0.41 (RUSTSEC-2026-0194, RUSTSEC-2026-0195)
+  - `anyhow` 1.0.102 -> 1.0.104 (RUSTSEC-2026-0190) and `memmap2` 0.9.10 ->
+    0.9.11 (RUSTSEC-2026-0186), both unsoundness fixes
+
+### Fixed
+
+- **pdfium binding with newer pdfium-render patch releases:** the default
+  `pdfium_latest` feature of `pdfium-render` binds against the newest pdfium
+  API the crate knows about. `pdfium-render` 0.9.4 targets pdfium 7881 and
+  fails to load the pinned `chromium/7699` binary (`undefined symbol:
+  FPDFTextObj_SetFontSize`), which disabled the pdfium backend and the OCR
+  fallback. The API level is now pinned to `pdfium_7543` (the newest
+  pdfium-render API not newer than the bundled binary), so `cargo update`
+  can no longer break the binding silently
+
+### Changed
+
+- **Workspace dependencies bulk update** (supersedes the open Dependabot PRs):
+  - `tower-http` 0.6 -> 0.7
+  - `tokenizers` 0.22 -> 0.23
+  - `scraper` 0.26 -> 0.27
+  - `rust_xlsxwriter` 0.94 -> 0.99
+  - `dashmap`, `regex`, `serde_json`, `tao`, `unicode-segmentation`, `uuid`
+    and the remaining transitive dependencies bumped to latest compatible
+    patch/minor via `cargo update` (`hnsw_rs` stays pinned at 0.3.4)
+- **Frontend dependencies bulk update:**
+  - `@testing-library/jest-dom` 6.9.1 -> 7.0.1
+  - `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser`
+    8.59.3 -> 8.71.0
+  - `jsdom` 29.1.1 -> 30.1.1
+  - `vite` 8.0.12 -> 8.3.1
+  - `vite-plugin-solid` 2.11.12 -> 2.11.14 (allows jest-dom 7 as peer)
+  - `vitest` 4.1.6 -> 4.1.11
+  - `eslint` 9.39.4 -> 9.39.5, `rollup-plugin-visualizer` 7.0.1 -> 7.1.1,
+    `solid-js` 1.9.12 -> 1.9.15
+- **Build prerequisites:** building the frontend from source now needs
+  Node.js 22.22+ (or 24.15+ / 26+), because `jsdom` 30 and `jest-dom` 7 drop
+  Node 20
+- **Docker base image:** `rust:1.95-bookworm` -> `rust:1.98-bookworm`
+- **GitHub Actions:** `actions/checkout` v6 -> v7, `actions/setup-node` v6 ->
+  v7, `actions/setup-python` v6 -> v7 (ESM migration; inputs unchanged)
+- **Clippy 1.98 compatibility:** `chunks_exact(4)` byte-to-`f32` decoding
+  switched to `as_chunks::<4>()`, one late-initialized tuple in
+  `neuroncite-annotate` rewritten as a `let` expression, and
+  `clippy::result_large_err` allowed module-wide for the SSE handlers that
+  return `axum::response::Response` as their error variant
+- **CI:** new `Frontend (type check, tests, build)` job runs `npm ci`,
+  `tsc --noEmit`, vitest, and `vite build` on every pull request. The Rust
+  jobs compile against a placeholder `frontend/dist/`, so npm dependency
+  updates were previously never exercised before a release
+- **CI audit ignore-list:** added RUSTSEC-2026-0192 (`ttf-parser`
+  unmaintained; transitive via `pdf-extract` -> `lopdf` 0.42, no alternative
+  dependency path)
+- **Dependabot:** `typescript` is held at v6 because `@typescript-eslint` 8.x
+  only supports `typescript` < 6.1; TypeScript 7 fails `npm ci` with ERESOLVE
+- **Version references:** README badge, Python client, and architecture
+  document brought in line with the workspace version (they still showed
+  0.1.1)
+
 ## [0.1.2] - 2026-05-13
 
 ### Security
@@ -126,5 +200,7 @@ Initial release.
 - Pre-commit hooks for formatting, linting, license auditing, and architecture
   validation
 
+[0.1.3]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/FF-TEC/NeuronCite/releases/tag/v0.1.0

@@ -33,6 +33,13 @@
 //! the counter exceeds MAX_SSE_CONNECTIONS, the handler returns 503 Service
 //! Unavailable instead of opening a new stream.
 
+// Every handler in this module returns `Result<Sse<...>, Response>` so that
+// the 503 from `try_acquire_sse_slot` can be propagated with `?`. axum's
+// `Response` is larger than clippy's `result_large_err` threshold, but it is
+// returned at most once per request and boxing it would only add an
+// allocation on the rejection path.
+#![allow(clippy::result_large_err)]
+
 use std::convert::Infallible;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -75,7 +82,6 @@ impl Drop for SseConnectionGuard {
 /// Attempts to acquire an SSE connection slot. Returns `Ok(SseConnectionGuard)`
 /// if the current count is below MAX_SSE_CONNECTIONS, or `Err(Response)` with
 /// 503 Service Unavailable if the limit is exceeded.
-#[allow(clippy::result_large_err)]
 fn try_acquire_sse_slot(state: &Arc<WebState>) -> Result<SseConnectionGuard, Response> {
     // AcqRel: the fetch_add acquires the current count so that we observe
     // any concurrent increments before making our limit decision, and

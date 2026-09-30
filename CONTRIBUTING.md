@@ -36,7 +36,7 @@ For an overview of planned features and project direction, see the
 ### Prerequisites
 
 - **Rust 1.88+** (stable) -- install via [rustup](https://rustup.rs)
-- **Node 20+** and **npm** -- for the SolidJS frontend build
+- **Node.js 22.22+** (or 24.15+ / 26+) and **npm** -- for the SolidJS frontend build
 - **Git** -- for version control and pre-commit hooks
 
 ### Clone and Build

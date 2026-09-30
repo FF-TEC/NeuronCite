@@ -1118,18 +1118,14 @@ pub fn find_anchor_fuzzy(
             // normalized window. Clamp to window boundaries, adjusting
             // the opposite end to maintain the requested sub_len.
             let half = sub_len / 2;
-            let trim_start;
-            let trim_end;
             let raw_start = center.saturating_sub(half);
             let raw_end = (raw_start + sub_len).min(window_chars);
-            if raw_end == window_chars {
+            let (trim_start, trim_end) = if raw_end == window_chars {
                 // Clamped at the right edge: shift left to maintain sub_len.
-                trim_start = window_chars.saturating_sub(sub_len);
-                trim_end = window_chars;
+                (window_chars.saturating_sub(sub_len), window_chars)
             } else {
-                trim_start = raw_start;
-                trim_end = raw_end;
-            }
+                (raw_start, raw_end)
+            };
             let sb = w_char_offsets[trim_start];
             let eb = w_char_offsets[trim_end];
             let sub = &norm_window[sb..eb];

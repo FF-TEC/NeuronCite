@@ -490,9 +490,8 @@ fn decode_f32_slice(data: &[u8], start: usize, byte_len: usize) -> Result<Vec<f3
     let slice = &data[start..end];
     let num_floats = byte_len / BYTES_PER_F32;
     let mut embedding = Vec::with_capacity(num_floats);
-    for chunk in slice.chunks_exact(BYTES_PER_F32) {
-        let bytes: [u8; 4] = [chunk[0], chunk[1], chunk[2], chunk[3]];
-        embedding.push(f32::from_le_bytes(bytes));
+    for chunk in slice.as_chunks::<BYTES_PER_F32>().0 {
+        embedding.push(f32::from_le_bytes(*chunk));
     }
     Ok(embedding)
 }
