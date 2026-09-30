@@ -7,6 +7,7 @@
 #   - Coverage via llvm-cov
 #   - Benchmarks (ort-only configuration)
 #   - Architecture validation (LaTeX-to-source consistency check)
+#   - Frontend type check, vitest suite, and vite build
 #   - Release binary builds for Windows, Linux, and macOS
 #   - Docker build verification for amd64 and arm64
 
@@ -34,7 +35,7 @@ jobs:
     name: Dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Audit for known vulnerabilities. The denyWarnings input
       # causes advisory warnings to be treated as hard failures.
@@ -44,10 +45,12 @@ jobs:
       #   pulled in transitively by hnsw_rs, lopdf, uuid. No fix released upstream.
       # RUSTSEC-2026-0105: core2 0.4.0 unmaintained and yanked; pulled in via
       #   image -> ravif -> rav1e -> bitstream-io. No alternative dependency path.
+      # RUSTSEC-2026-0192: ttf-parser 0.25 unmaintained; pulled in via lopdf 0.42,
+      #   which pdf-extract 0.12 requires (lopdf ^0.42). No alternative dependency path.
       - uses: actions-rust-lang/audit@v1
         with:
           denyWarnings: true
-          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0057,RUSTSEC-2025-0119,RUSTSEC-2025-0141,RUSTSEC-2026-0097,RUSTSEC-2026-0105
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0057,RUSTSEC-2025-0119,RUSTSEC-2025-0141,RUSTSEC-2026-0097,RUSTSEC-2026-0105,RUSTSEC-2026-0192
 
   # ──────────────────────────────────────────────────────────────
   # Stage 1: Format check
@@ -57,7 +60,7 @@ jobs:
     name: Format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -112,7 +115,7 @@ jobs:
             name: mcp-only
             features: "--features mcp"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates. libwebkit2gtk-4.1-dev provides all
@@ -178,7 +181,7 @@ jobs:
             name: mcp-only
             features: "--features mcp"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -215,7 +218,7 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -238,7 +241,7 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -261,7 +264,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -303,7 +306,7 @@ jobs:
         # but only for the ort-only feature combination.
         os: [windows-latest, ubuntu-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.
@@ -340,9 +343,9 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -417,9 +420,9 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -430,6 +433,43 @@ jobs:
       - name: Run pytest
         working-directory: clients/python
         run: pytest tests/ -v --tb=short
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 7c: Frontend checks
+  # The Rust jobs compile neuroncite-web against the placeholder
+  # frontend/dist/ created by its build.rs, so they never install
+  # or build the SolidJS frontend. This job installs the committed
+  # lockfile with `npm ci` (which also enforces peer dependency
+  # ranges), then runs the TypeScript type check, the vitest suite,
+  # and the production vite build. Node.js matches NODE_VERSION in
+  # release.yml.
+  # ──────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend (type check, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/neuroncite-web/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: "npm"
+          cache-dependency-path: crates/neuroncite-web/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit -p .
+
+      - name: Run vitest
+        run: npm test
+
+      - name: Build production bundle
+        run: npx vite build
 
   # ──────────────────────────────────────────────────────────────
   # Stage 8: Docker build verification (disabled in CI)
@@ -446,7 +486,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────
   release-build:
     name: Release build (${{ matrix.os }})
-    needs: [audit, test, test-release, doc-test, coverage, bench, validate-architecture, python-client-tests]
+    needs: [audit, test, test-release, doc-test, coverage, bench, validate-architecture, python-client-tests, frontend]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -462,7 +502,7 @@ jobs:
             artifact-name: neuroncite-macos-arm64
             binary-path: target/release/neuroncite
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The wry crate (WebView) depends on webkit2gtk-sys, javascriptcore-rs-sys,
       # soup3-sys, and GTK3 binding crates at compile time.

@@ -134,7 +134,7 @@ fn render_platform(window: &Window, rgba: &[u8], width: u32, height: u32) -> Res
     // This is the standard ARGB32 format for GDI layered window operations.
     let pixel_count = (final_w * final_h) as usize;
     let mut bgra = Vec::with_capacity(pixel_count * 4);
-    for pixel in final_rgba.chunks_exact(4) {
+    for pixel in final_rgba.as_chunks::<4>().0 {
         let (r, g, b, a) = (
             pixel[0] as u32,
             pixel[1] as u32,

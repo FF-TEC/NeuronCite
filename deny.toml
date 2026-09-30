@@ -114,6 +114,12 @@ ignore = [
     # Transitive dependency via image -> ravif -> rav1e -> bitstream-io. No
     # alternative dependency path exists without forking image or rav1e.
     "RUSTSEC-2026-0105",
+
+    # RUSTSEC-2026-0192: ttf-parser 0.25 is unmaintained. Transitive dependency
+    # via lopdf 0.42, which pdf-extract 0.12 requires (lopdf ^0.42). The crate
+    # only parses embedded font tables during text extraction and has no known
+    # security vulnerabilities.
+    "RUSTSEC-2026-0192",
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────

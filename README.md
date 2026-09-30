@@ -1,6 +1,6 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![CI](https://github.com/FF-TEC/NeuronCite/actions/workflows/ci.yml/badge.svg)](https://github.com/FF-TEC/NeuronCite/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.1.1-brightgreen.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.1.3-brightgreen.svg)](Cargo.toml)
 
 <p align="center">
   <img src="crates/neuroncite-web/assets/splash.png" alt="NeuronCite" width="400" />
@@ -266,7 +266,7 @@ docker run -p 3030:3030 \
 
 ### From Source
 
-Prerequisites: Rust 1.88+ (stable), Node 20+, npm.
+Prerequisites: Rust 1.88+ (stable), Node.js 22.22+ (or 24.15+ / 26+), npm.
 
 ```bash
 git clone https://github.com/FF-TEC/NeuronCite.git

@@ -49,7 +49,7 @@
 \fancyhf{}
 \fancyhead[L]{\textsc{NeuronCite} -- Architecture Document}
 \fancyhead[R]{\thepage}
-\fancyfoot[C]{\small Version 0.1.1 -- March 2026}
+\fancyfoot[C]{\small Version 0.1.3 -- September 2026}
 \renewcommand{\headrulewidth}{0.4pt}
 
 % --- Title formatting ---
@@ -80,7 +80,7 @@
     {\large Written in Rust}\\[3cm]
 
     \begin{tabular}{ll}
-        \textbf{Version:}  & 0.1.1 \\
+        \textbf{Version:}  & 0.1.3 \\
         \textbf{Date:}     & March 17, 2026 \\
         \textbf{Platform:} & Windows (primary), Linux (secondary) \\
         \textbf{Language:}  & Rust 2024 Edition \\
@@ -6035,6 +6035,11 @@ feature flag combinations. Each cell in the matrix represents a separate CI job.
               \item \texttt{api\_parity\_check.py} -- Verifies REST, MCP, and
                     Python client API parity.
           \end{enumerate}
+    \item \textbf{Frontend checks:} \texttt{npm ci}, \texttt{tsc -{}-noEmit},
+          \texttt{vitest run}, and \texttt{vite build} for the SolidJS frontend
+          on Node.js 26. The Rust jobs compile \texttt{neuroncite-web} against a
+          placeholder \texttt{frontend/dist/}, so this stage is the only one
+          that installs and builds the npm dependency tree.
 \end{enumerate}
 
 \subsection{Architecture-Code Consistency Validator}
