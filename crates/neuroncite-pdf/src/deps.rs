@@ -759,6 +759,7 @@ fn download_tesseract_platform(dest_dir: &Path) -> Result<PathBuf, PdfError> {
     let output = std::process::Command::new("curl")
         .args([
             "-L",
+            "--fail",
             "-o",
             &appimage_path.to_string_lossy(),
             TESSERACT_APPIMAGE_URL,
@@ -929,7 +930,7 @@ fn download_and_extract_tgz(url: &str, dest_dir: &Path) -> Result<(), PdfError> 
     {
         // Download and extract in one pipeline: curl -L <url> | tar xzf - -C <dir>
         let curl_child = std::process::Command::new("curl")
-            .args(["-L", "-s", url])
+            .args(["-L", "-s", "--fail", url])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()
@@ -1069,8 +1070,20 @@ fn download_single_file(url: &str, dest: &Path) -> Result<(), PdfError> {
 
     #[cfg(not(target_os = "windows"))]
     {
+        // --fail makes curl exit non-zero on HTTP 4xx/5xx instead of saving
+        // the error response body as the downloaded file; --show-error keeps
+        // curl's reason (e.g. "The requested URL returned error: 404") in
+        // stderr despite -s, so it ends up in the returned error message.
         let output = std::process::Command::new("curl")
-            .args(["-L", "-s", "-o", &dest.to_string_lossy(), url])
+            .args([
+                "-L",
+                "-s",
+                "--show-error",
+                "--fail",
+                "-o",
+                &dest.to_string_lossy(),
+                url,
+            ])
             .output()
             .map_err(|e| PdfError::DepDownload(format!("curl download failed: {e}")))?;
 
@@ -1481,6 +1494,45 @@ mod tests {
         assert!(
             guard.is_some(),
             "guard should contain the test value after non-poisoned lock"
+        );
+    }
+
+    /// T-PDF-062: `download_single_file` returns an error for an HTTP 404
+    /// response instead of saving the error body as the downloaded file.
+    /// Regression test for tessdata downloads that were written as
+    /// `.traineddata` files containing an HTTP error page. Uses a one-shot
+    /// local HTTP server, so no network access is required.
+    #[test]
+    fn t_pdf_062_download_single_file_rejects_http_error() {
+        use std::io::{Read, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind local listener");
+        let port = listener.local_addr().expect("listener address").port();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept connection");
+            let mut request = [0u8; 1024];
+            let _ = stream.read(&mut request);
+            let body = "not found";
+            let response = format!(
+                "HTTP/1.1 404 Not Found\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+        });
+
+        let tmp = tempfile::tempdir().expect("create temp dir");
+        let dest = tmp.path().join("eng.traineddata");
+        let result =
+            download_single_file(&format!("http://127.0.0.1:{port}/eng.traineddata"), &dest);
+        server.join().expect("server thread");
+
+        assert!(result.is_err(), "HTTP 404 must be reported as an error");
+        let saved = std::fs::read_to_string(&dest).unwrap_or_default();
+        assert!(
+            !saved.contains("not found"),
+            "the HTTP error body must not be saved as the downloaded file"
         );
     }
 }

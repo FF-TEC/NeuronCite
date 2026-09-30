@@ -11,6 +11,17 @@ Follow-up to 0.1.3: takes over the remaining major/0.x dependency updates, so
 every dependency is on its latest release except the ones blocked upstream
 (listed at the end).
 
+### Fixed
+
+- **Dependency downloads on Linux/macOS saved HTTP error pages as files:**
+  the `curl` calls for the Tesseract AppImage, the tessdata language packs
+  and the pdfium archive ran without `--fail`. A 403/404 response was written
+  to disk (e.g. a JSON error as `eng.traineddata`) and the install was
+  reported as successful. They now use `--fail` (and `--show-error` for the
+  single-file downloads), so the install returns an error that names the HTTP
+  status. Found during a manual smoke test of the release binary; regression
+  test T-PDF-062
+
 ### Changed
 
 - **SQLite:** `rusqlite` 0.32 -> 0.40 and `r2d2_sqlite` 0.25 -> 0.35 (bundled
