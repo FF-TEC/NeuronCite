@@ -26,16 +26,19 @@ updates:
     commit-message:
       prefix: "deps(cargo):"
     ignore:
-      # cairo-rs is pinned to 0.18 because tao 0.34 (used for the native
-      # splash screen) depends on gtk 0.18 which requires cairo-rs 0.18.
-      # Bumping cairo-rs without bumping tao/gtk causes compilation errors.
+      # gtk and cairo-rs are pinned to 0.18 because tao 0.37 and wry 0.57
+      # (native window and WebView used for the splash screen) still depend
+      # on gtk 0.18, which requires cairo-rs 0.18. Bumping them without a
+      # tao/wry release on the newer gtk-rs line causes compilation errors.
       - dependency-name: "cairo-rs"
         versions: [">= 0.19"]
-      # windows crate is pinned to 0.61 because tao 0.34 (native window
-      # management) depends on windows 0.61. Bumping to 0.62+ would pull
-      # in a second copy of the windows crate and its proc-macros.
+      - dependency-name: "gtk"
+        versions: [">= 0.19"]
+      # windows crate must match the version tao and wry depend on (0.62 for
+      # tao 0.37 / wry 0.57). Bumping it alone would pull in a second copy of
+      # the windows crate and its proc-macros; bump it together with tao/wry.
       - dependency-name: "windows"
-        versions: [">= 0.62"]
+        versions: [">= 0.63"]
 
   # Node.js frontend dependencies (crates/neuroncite-web/frontend/).
   # Tracks SolidJS, Vite, TypeScript, and all transitive npm packages.
@@ -51,9 +54,10 @@ updates:
     commit-message:
       prefix: "deps(npm):"
     ignore:
-      # eslint is pinned to v9 because eslint-plugin-jsx-a11y (peer dep)
-      # only supports eslint ^3 through ^9. Upgrading to v10 requires the
-      # flat config format and a compatible jsx-a11y plugin version.
+      # eslint is pinned to v9 because eslint-plugin-jsx-a11y (latest 6.10.2,
+      # peer dep) only supports eslint ^3 through ^9. The config already uses
+      # the flat format (eslint.config.js), so v10 only needs a compatible
+      # jsx-a11y release.
       - dependency-name: "eslint"
         versions: [">= 10"]
       # typescript is pinned to v6 because @typescript-eslint (parser and

@@ -113,7 +113,7 @@ image = { workspace = true }
 # The splash screen renders a pre-generated PNG with per-pixel alpha
 # transparency using native OS APIs (no WebView). Each platform requires
 # its own rendering API bindings. All crates listed below are already
-# transitive dependencies of tao 0.34.5 and add zero new system library
+# transitive dependencies of tao 0.37 / wry 0.57 and add zero new system library
 # requirements -- Cargo unifies them with tao's existing dependency versions.
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -121,9 +121,9 @@ image = { workspace = true }
 # used to render the splash PNG onto a WS_EX_LAYERED window with per-pixel alpha,
 # and for loading the multi-resolution ICO from the exe resources (LoadImageW)
 # to set crisp taskbar/window icons at the exact DPI-appropriate pixel size.
-# tao 0.34.5 depends on windows 0.61 with Win32_Graphics_Gdi already enabled.
+# Must match the windows version tao 0.37 and wry 0.57 depend on (0.62).
 # Optional: only compiled with the gui feature (splash and native_window modules).
-windows = { version = "0.61", optional = true, features = [
+windows = { version = "0.62", optional = true, features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_System_LibraryLoader",
@@ -132,7 +132,7 @@ windows = { version = "0.61", optional = true, features = [
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Objective-C runtime bindings for accessing NSWindow, NSImageView, and NSImage
-# to display the splash PNG on a transparent NSWindow. tao 0.34.5 already depends
+# to display the splash PNG on a transparent NSWindow. tao 0.37 already depends
 # on these exact crate versions for its own Cocoa window management.
 # Optional: only compiled with the gui feature (splash module).
 objc2 = { version = "0.6", optional = true }
@@ -144,7 +144,7 @@ objc2-foundation = { version = "0.3", optional = true, features = ["NSData", "NS
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # GTK and Cairo bindings for drawing the splash PNG onto a transparent GTK window.
-# tao 0.34.5 depends on gtk 0.18 and cairo-rs 0.18 for its own window management.
+# tao 0.37 and wry 0.57 depend on gtk 0.18 and cairo-rs 0.18 for their own window management.
 # Gated behind the gui feature because the splash module is only compiled when gui
 # is enabled. Without this gate, the server (no-gui) build would fail on Linux CI
 # runners that do not install the libgtk-3-dev headers.

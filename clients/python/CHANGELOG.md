@@ -3,6 +3,12 @@
 All changes to the NeuronCite Python client are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.1.4 - 2026-09-30
+
+### Changed
+
+- Version aligned with NeuronCite 0.1.4. No API changes.
+
 ## 0.1.3 - 2026-09-30
 
 ### Changed

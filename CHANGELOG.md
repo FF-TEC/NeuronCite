@@ -5,6 +5,49 @@ All notable changes to NeuronCite are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-09-30
+
+Follow-up to 0.1.3: takes over the remaining major/0.x dependency updates, so
+every dependency is on its latest release except the ones blocked upstream
+(listed at the end).
+
+### Changed
+
+- **SQLite:** `rusqlite` 0.32 -> 0.40 and `r2d2_sqlite` 0.25 -> 0.35 (bundled
+  `libsqlite3-sys` 0.30 -> 0.38)
+- **HTTP client / TLS:** `reqwest` 0.12 -> 0.13. The `rustls-tls` feature is
+  now `rustls`; reqwest's default TLS backend is rustls with the `aws-lc-rs`
+  crypto provider, and certificates are verified against the operating
+  system's trust store (`rustls-platform-verifier`). `native-tls` and
+  `openssl` are no longer part of the dependency tree
+- **OpenAPI:** `utoipa` 5 -> 6
+- **ONNX Runtime bindings:** `ort` 2.0.0-rc.12 -> 2.0.0-rc.13 (still API
+  level 23 for the bundled ORT 1.23.2 libraries). The execution provider
+  types were renamed (`CUDAExecutionProvider` -> `CUDA`, same for ROCm,
+  DirectML, CoreML), ROCm now needs the `rocm` feature, and
+  `GraphOptimizationLevel` is `#[non_exhaustive]`
+- **Native GUI:** `tao` 0.35 -> 0.37, `wry` 0.55 -> 0.57 and `windows`
+  0.61 -> 0.62 (the version tao/wry use). `gtk`/`cairo-rs` stay on 0.18
+  because tao 0.37 and wry 0.57 still depend on gtk 0.18
+- **PDF:** `lopdf` 0.42 -> 0.45 for the annotation pipeline (`pdf-extract`
+  0.12 still uses lopdf 0.42 internally)
+- **`opener`** 0.8 -> 0.9
+- **Frontend:** `vitest` 4.1 -> 5.0, `eslint-plugin-solid` 0.14 -> 0.18,
+  `@eslint/js` added as an explicit dev dependency
+- **ESLint config:** `.eslintrc.json` replaced by an equivalent flat config
+  (`eslint.config.js`). eslint-plugin-solid 0.18 only ships flat-config
+  presets, and ESLint 10 drops the eslintrc format. The rule set and the
+  reported findings are unchanged
+- **Dependabot:** `gtk` is now pinned alongside `cairo-rs` (< 0.19), and the
+  `windows` pin moves to < 0.63 to follow tao/wry
+
+### Still blocked upstream
+
+- `typescript` 7: `@typescript-eslint` 8.x only supports `typescript < 6.1`
+- `eslint` 10: `eslint-plugin-jsx-a11y` (latest 6.10.2) only supports eslint
+  up to 9
+- `gtk` 0.19 / `cairo-rs` 0.22: tao and wry have not moved off gtk 0.18
+
 ## [0.1.3] - 2026-09-30
 
 ### Security
@@ -200,6 +243,7 @@ Initial release.
 - Pre-commit hooks for formatting, linting, license auditing, and architecture
   validation
 
+[0.1.4]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/FF-TEC/NeuronCite/compare/v0.1.0...v0.1.1
