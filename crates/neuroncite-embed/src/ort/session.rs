@@ -332,8 +332,9 @@ fn configure_builder(
         ort::session::builder::GraphOptimizationLevel::Disable => 0,
         ort::session::builder::GraphOptimizationLevel::Level1 => 1,
         ort::session::builder::GraphOptimizationLevel::Level2 => 2,
-        ort::session::builder::GraphOptimizationLevel::Level3
-        | ort::session::builder::GraphOptimizationLevel::All => 3,
+        // GraphOptimizationLevel is #[non_exhaustive] since ort 2.0.0-rc.13;
+        // Level3, All, and any level added later are logged as 3.
+        _ => 3,
     };
     tracing::debug!(
         optimization_level = opt_level_num,
@@ -552,7 +553,7 @@ pub fn create_session(
                 if let Some(session) = try_execution_provider(
                     config,
                     "CUDA",
-                    ort::execution_providers::CUDAExecutionProvider::default().build(),
+                    ort::execution_providers::CUDA::default().build(),
                 )? {
                     return Ok((session, build_inference_capabilities("CUDA")));
                 }
@@ -588,7 +589,7 @@ pub fn create_session(
             if let Some(session) = try_execution_provider(
                 config,
                 "DirectML",
-                ort::execution_providers::DirectMLExecutionProvider::default().build(),
+                ort::execution_providers::DirectML::default().build(),
             )? {
                 return Ok((session, build_inference_capabilities("DirectML")));
             }
@@ -621,7 +622,7 @@ pub fn create_session(
             if let Some(session) = try_execution_provider(
                 config,
                 "CoreML",
-                ort::execution_providers::CoreMLExecutionProvider::default()
+                ort::execution_providers::CoreML::default()
                     .with_compute_units(ort::execution_providers::coreml::ComputeUnits::All)
                     .with_model_format(ort::execution_providers::coreml::ModelFormat::MLProgram)
                     .with_specialization_strategy(
@@ -665,7 +666,7 @@ pub fn create_session(
             if let Some(session) = try_execution_provider(
                 config,
                 "ROCm",
-                ort::execution_providers::ROCmExecutionProvider::default().build(),
+                ort::execution_providers::ROCm::default().build(),
             )? {
                 return Ok((session, build_inference_capabilities("ROCm")));
             }

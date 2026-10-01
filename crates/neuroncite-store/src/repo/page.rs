@@ -527,7 +527,7 @@ mod tests {
             conn.execute(
                 "INSERT INTO page (file_id, page_number, content, backend, byte_count)
                  VALUES (?1, ?2, ?3, 'pdf-extract', ?4)",
-                rusqlite::params![file_id, page_num, content, content.len()],
+                rusqlite::params![file_id, page_num, content, content.len() as i64],
             )
             .expect("insert page");
         }
