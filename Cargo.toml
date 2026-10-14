@@ -135,7 +135,7 @@ r2d2_sqlite = "0.35"
 # positions (shared references). A version upgrade requires re-verifying that
 # load_hnsw still operates in copy mode and that the covariant annotation is
 # still valid before the pin is bumped.
-hnsw_rs = "=0.3.4"
+hnsw_rs = "=0.3.5"
 
 # Atomic reference-counted pointer swapping for lock-free index hot-reloading
 arc-swap = "1"
